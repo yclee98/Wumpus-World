@@ -1,35 +1,29 @@
 from World import *
 
 def main():
-    ####### WHEN MAPPING COORDINATES TO WORLD DO map[y][x]
-    ####### rows correspond to y coordinates and columns correspond to x coordinates(in manual 2.21)
     rows = 7
     columns = 6
     innerCell = 9
-    map = None  #3d map[rows][columns][innerCell]
+    
+    #initializing objects
+    map = Map(rows, columns, innerCell)
+    npc = NPC(map)
+    agent = Agent(map)
 
-    agent=[1,1]
-    #sensory = confounded, stench, tingle, glitter, bump, scream
-    #0 for off, 1 for on
-    #confounded on at start of the game 
-    sensory = [1,0,0,0,0,0]
+    #create map and spawn agent/npc on map
+    map.createMap()
+    agent.spawnAgent()
+    npc.spawnNPC(agent.x, agent.y, rows, columns)
 
-    #npc position 
-    npc = {
-        "wumpus": None,
-        "coin": None,
-        "portal1": None,
-        "portal2": None,
-        "portal3": None
-    }
+    #absoulte map prinout
+    npc.printNPC()
+    map.printMap(agent.sensory)
 
-    map = createMap(rows, columns, innerCell)
-    spawnNPC(npc, agent[0], agent[1], rows, columns)
-    showNPC(npc, map)
-    # showXY(map) #can use this to see the coordinate for the various grid 
+    agent.moveForward()
+    agent.moveForward()
+    agent.turnRight()
+    agent.moveForward()
+    agent.shoot(npc)
 
-    print(npc)
-    printMap(map)
-
-if __name__=="__main__":
+if __name__== "__main__":
     main()
