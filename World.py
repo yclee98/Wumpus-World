@@ -8,6 +8,7 @@ class Map:
         self.columns = columns
         self.innerCell = innerCell
         self.map = []
+        self.npc = None
 
     #create a 3d map of row x columns x innerCell
     #populate outer wall with #
@@ -83,7 +84,7 @@ class Map:
         self.map[npcY][npcX][3] = "—"
         self.map[npcY][npcX][5] = "—"
     
-    #update cell after killing wumpus
+    #update cell after killing wumpus, remove wumpus from the cell
     def updateCellKillWumpus(self, npcX, npcY):
         #wumpus died, print . at that cell
         self.map[npcY][npcX][3] = "."
@@ -126,19 +127,58 @@ class Map:
             self.map[newY][newX][4] = '>'
         elif(orientation=='west'):
             self.map[newY][newX][4] = '<'
+    
+    #spawn the npc on the map; take in agent position so that we do not spawn npc on a location agent is at
+    def spawnNPConMap(self, npc, agentX, agentY, random=False):
+        self.npc = npc
+        if(random == True):
+            npc.spawnNPC(agentX, agentY, self.rows, self.columns)
+        self.updateCellNpc(self.npc.wumpus[0], self.npc.wumpus[1])
+        self.updateCellNpc(self.npc.coin[0], self.npc.coin[1])
+        self.updateCellNpc(self.npc.portal[0][0], self.npc.portal[0][1])
+        self.updateCellNpc(self.npc.portal[1][0], self.npc.portal[1][1])
+        self.updateCellNpc(self.npc.portal[2][0], self.npc.portal[2][1])
+    
+    #perceive sensory at position x y
+    def perceiveSensory(self, agentPosition):
+        #agentPosition in (x, y)
+        #confounded, stench, tingle, glitter, bump, scream
+        sensory = [0, 0, 0, 0, 0, 0] #intialize all sensory to off
+
+        #confounded indicator; agent in the same cell as a confundus
+        if(agentPosition in self.npc.portal):
+            sensory[0] = 1
+
+        #glitter indicator; agent in same cell as coin
+        if(agentPosition == self.npc.coin):
+            sensory[3] = 1
+        
+        #get the up down left right cell of the position agent is in 
+        up = (agentPosition[0], agentPosition[1]+1)
+        down = (agentPosition[0], agentPosition[1]-1)
+        left = (agentPosition[0]-1, agentPosition[1])
+        right = (agentPosition[0]+1, agentPosition[1])
+
+        #stench indicator; cell next to one inhibited by wumpus
+        if(up==self.npc.wumpus or down==self.npc.wumpus or left==self.npc.wumpus or right==self.npc.wumpus):
+            sensory[1] = 1        
+
+        #tingle indicator; cell next to one inhibited by confundus 
+        if(up in self.npc.portal or down in self.npc.portal or left in self.npc.portal or right in self.npc.portal):
+            sensory[2] = 1
+        
+        return sensory
+
 
 class NPC:
-    def __init__(self, map):
-        self.map = map
+    def __init__(self):
         #position of npc store as tuple(x, y)
         #access using self.wumpus[0] and self.wumpus[1]
-        self.wumpus = (3,3)
-        self.coin = None
-        self.portal1 = None
-        self.portal2 = None
-        self.portal3 = None
+        self.wumpus = (1,3)
+        self.coin = (2,3)
+        self.portal = [(3,1), (3,3), (4,4)]
 
-    #spawn the npc location
+    #spawn the npc location randomly 
     def spawnNPC(self, agentX, agentY, rows, columns):
         #x y should not be repeated, use a set to prevent repeation of coordinates
         coordinates = set()
@@ -150,24 +190,18 @@ class NPC:
             coordinates.add((x,y))
         coordinates.remove((agentX, agentY)) #remove agent postion from set so that it will not be assigned to npc
 
-        # self.wumpus = coordinates.pop()
+        self.wumpus = coordinates.pop()
         self.coin = coordinates.pop()
-        self.portal1 = coordinates.pop()
-        self.portal2 = coordinates.pop()
-        self.portal3 = coordinates.pop()
-
-        self.map.updateCellNpc(self.wumpus[0], self.wumpus[1])
-        self.map.updateCellNpc(self.coin[0], self.coin[1])
-        self.map.updateCellNpc(self.portal1[0], self.portal1[1])
-        self.map.updateCellNpc(self.portal2[0], self.portal2[1])
-        self.map.updateCellNpc(self.portal3[0], self.portal3[1])
+        self.portal[0] = coordinates.pop()
+        self.portal[1] = coordinates.pop()
+        self.portal[2] = coordinates.pop()
     
     def printNPC(self):
         print(f"Wumpus: {self.wumpus}", end=", ")
         print(f"Coin: {self.coin}", end=", ")
-        print(f"Portal1: {self.portal1}", end=", ")
-        print(f"Portal2: {self.portal2}", end=", ")
-        print(f"Portal3: {self.portal3}")
+        print(f"Portal1: {self.portal[0]}", end=", ")
+        print(f"Portal2: {self.portal[1]}", end=", ")
+        print(f"Portal3: {self.portal[2]}")
 
 
 class Agent:
@@ -180,12 +214,13 @@ class Agent:
         #sensory = confounded, stench, tingle, glitter, bump, scream
         #0 for off, 1 for on
         #confounded on at start of the game 
-        self.sensory = [1,0,0,1,0,0]
+        self.sensory = [1,0,0,0,0,0]
 
     def spawnAgent(self):
         self.map.updateCellAgent(self.x, self.y, self.x, self.y, self.orientation)
-        self.map.updateCellSensory(self.sensory, self.x, self.y)
+        self.map.updateCellSensory(self.sensory, self.x, self.y)     
 
+    #flow should be driver move/do an action on agent, preceive the surrounding then feed it to prolog agent 
     def moveForward(self):
         print("Action sequence: move forward")
         #depend on orientation move the agent 
@@ -197,6 +232,19 @@ class Agent:
         elif(self.orientation=='east'): self.x = self.x + 1 
         elif(self.orientation=='south'): self.y = self.y - 1 
         elif(self.orientation=='west'): self.x = self.x - 1 
+
+        #get sensory of the cell after making a move 
+        self.sensory = self.map.perceiveSensory((self.x, self.y))
+
+        # #check if bump into wall, valid x is range 1 to 4; valid y is range 1 to 5
+        if(self.x <=0 or self.x>=5 or self.y<=0 or self.y>=6):
+            #do not let agent move to wall so return to old position
+            self.x = oldX
+            self.y = oldY
+            #get sensory again as the previous one will get for the position at wall
+            self.sensory = self.map.perceiveSensory((self.x, self.y))
+            #bump into wall, update indicator bump
+            self.sensory[4] = 1
 
         #update the position on the map and print the map
         self.map.updateCellAgent(oldX, oldY, self.x, self.y, self.orientation)
@@ -210,7 +258,7 @@ class Agent:
         elif(self.orientation=='south'): self.orientation='east'
         elif(self.orientation=='west'): self.orientation='south'
 
-        #update the orientation on the map and print the map
+        #update the orientation on the map and print the map, x y no change
         self.map.updateCellAgent(self.x, self.y, self.x, self.y, self.orientation)
         self.map.printMap(self.sensory)
 
@@ -221,20 +269,25 @@ class Agent:
         elif(self.orientation=='south'): self.orientation='west'
         elif(self.orientation=='west'): self.orientation='north'
 
-        #update the orientation on the map and print the map
+        #update the orientation on the map and print the map, x y no change
         self.map.updateCellAgent(self.x, self.y, self.x, self.y, self.orientation)
         self.map.printMap(self.sensory)
 
-    def pickUp(self, npc):
+    def pickUp(self):
         print("Action sequence: pickup")
         #pickup the coin and turn off the glitter in sensory
         #remove the coin from npc
-        self.sensory[3] = 0
-        npc.coin = None
-        self.map.updateCellSensory(self.sensory, self.x, self.y)
+        if((self.x, self.y) == self.map.npc.coin):
+            self.sensory[3] = 0
+            self.map.npc.coin = None
+            print("Successfully pickup the coin")
+            self.map.updateCellSensory(self.sensory, self.x, self.y)
+        else:
+            print("No coin to pickup")
+            
         self.map.printMap(self.sensory)
     
-    def shoot(self, npc):
+    def shoot(self):
         print("Action sequence: shoot")
         #check if wumpus is ahead and in direction of agent to shoot
         #turn on scream if it manage to kill the wumpus
@@ -248,15 +301,13 @@ class Agent:
         elif(self.orientation=='west'): aheadX = aheadX - 1
 
         #check if wumpus ahead to shoot
-        if(aheadX == npc.wumpus[0] and aheadY == npc.wumpus[1]):
-            self.sensory[5] = 1 
-            npc.wumpus = None
-            self.map.updateCellKillWumpus(aheadX, aheadY) #location of wumpus is at aheadX and aheadY
+        if((aheadX, aheadY) == self.map.npc.wumpus):
+            self.sensory[5] = 1 #scream indicator 
+            self.map.npc.wumpus = None
+            self.map.updateCellKillWumpus(aheadX, aheadY) #location of wumpus is at aheadX and aheadY, need to remove from cell
             print("Wumpus kill")
+            self.map.updateCellSensory(self.sensory, self.x, self.y)
         else:
             print("Failed to kill wumpus")
-        
-        self.map.updateCellSensory(self.sensory, self.x, self.y)
-        self.map.printMap(self.sensory)
 
-    
+        self.map.printMap(self.sensory)
