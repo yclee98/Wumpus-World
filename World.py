@@ -311,6 +311,7 @@ class Agent:
     def move(self, action):
         bump = False
         scream = False
+        #naming convention for action is follow from manual 2.1
         if(action == "moveforward"):
             bump = self.moveForward() #will teturn true if bump to wall
         elif(action == "turnleft"):
@@ -325,5 +326,5 @@ class Agent:
         #bump and scream indicator are taken from the moveforward and shoot action then pass to percieveSensory to update the sensory list
         self.sensory = self.map.perceiveSensory((self.x, self.y), bump, scream)
         self.map.updateCellSensory(self.sensory, self.x, self.y)
-        #TODO call to prolog to assert action and pass the sensory
+        #TODO call to prolog to query action and pass the sensory
         self.map.printMap(self.sensory)
