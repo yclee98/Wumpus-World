@@ -13,7 +13,8 @@ def main():
     #create map and spawn agent/npc on map
     map.createMap()
     agent.spawnAgent()
-    map.spawnNPConMap(npc, agent.x, agent.y)
+    # npc.spawnNPC(agentX, agentY, rows, columns) #if want to random npc location
+    map.setNpc(npc)
 
     #absoulte map prinout
     npc.printNPC()
@@ -22,17 +23,17 @@ def main():
     
     move = ""
     while(move != "1"):
-        move = input("available input (f l r s p): ")
+        move = input("1 to exit; available input (f l r s p): ")
         if(move == "f"):
-            agent.moveForward()
+            agent.move("moveforward")
         elif (move =="l"):
-            agent.turnLeft()
+            agent.move("turnleft")
         elif (move =="r"):
-            agent.turnRight()
+            agent.move("turnright")
         elif (move=="s"):
-            agent.shoot()
+            agent.move("shoot")
         elif(move=="p"):
-            agent.pickUp()
+            agent.move("pickup")
 
 
 if __name__== "__main__":

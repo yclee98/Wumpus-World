@@ -42,51 +42,19 @@ class Map:
             for j in range(1, self.columns-1):
                 self.map[i][j][4] = "?"
 
-    #print the map
-    def printMap(self, sensory):
-        innerCellColumn = self.innerCell // 3
-        innerCellRow = self.innerCell // 3
-        print("-------------------------------------------------")
-        for i in range(self.rows-1, -1, -1): #to display such that lower row is at the bottom of map
-            for j in range(innerCellRow):
-                print("|", end="")
-                for k in range(self.columns):
-                    print(" ", end="")
-                    for l in range(innerCellColumn):
-                        print(self.map[i][k][j*innerCellRow+l]+" ", end = "")
-                    print("|", end="")
-                print()
-            print("-------------------------------------------------")
-        self.printSensory(sensory)
+    #initialize npc to map variable
+    def setNpc(self, npc):
+        self.npc = npc
 
-    #print the sensory
-    def printSensory(self, sensory):
-        fullName = ["Confounded", "Stench", "Tingle", "Glitter", "Bump", "Scream"]
-        output = ""
-        for i in range(len(sensory)):
-            if(sensory[i] == 1): #indicator is on
-                output = output + fullName[i] + "—"
-            else: #indicator is off
-                output = output + fullName[i][0] + "—"
-        print("Percepts: " + output)
-        print()
-
-    #show x y coordinates on the map; not needed just to see the placement of x y
-    def showXY(self):
-        for i in range(self.rows):
-            for j in range(self.columns):
-                self.map[i][j][0] = str(j) # x = column
-                self.map[i][j][1] = str(i) # y = row
-
-    #update cell with npc location 
+    #update cell with to indicate presence of npc 
     def updateCellNpc(self, npcX, npcY):
-        #update cell 3 and 5 with "—" to indicate presence of NPC
+        #update cell 3 and 5 with "—" 
         self.map[npcY][npcX][3] = "—"
         self.map[npcY][npcX][5] = "—"
     
     #update cell after killing wumpus, remove wumpus from the cell
     def updateCellKillWumpus(self, npcX, npcY):
-        #wumpus died, print . at that cell
+        #wumpus died, print . at that cell instead 
         self.map[npcY][npcX][3] = "."
         self.map[npcY][npcX][5] = "."
 
@@ -128,19 +96,18 @@ class Map:
         elif(orientation=='west'):
             self.map[newY][newX][4] = '<'
     
-    #spawn the npc on the map; take in agent position so that we do not spawn npc on a location agent is at
-    def spawnNPConMap(self, npc, agentX, agentY, random=False):
-        self.npc = npc
-        if(random == True):
-            npc.spawnNPC(agentX, agentY, self.rows, self.columns)
-        self.updateCellNpc(self.npc.wumpus[0], self.npc.wumpus[1])
-        self.updateCellNpc(self.npc.coin[0], self.npc.coin[1])
+    #show the npc on the map;
+    def spawnNPConMap(self):
+        if(self.npc.wumpus!=None):
+            self.updateCellNpc(self.npc.wumpus[0], self.npc.wumpus[1])
+        if(self.npc.coin!=None):
+            self.updateCellNpc(self.npc.coin[0], self.npc.coin[1])
         self.updateCellNpc(self.npc.portal[0][0], self.npc.portal[0][1])
         self.updateCellNpc(self.npc.portal[1][0], self.npc.portal[1][1])
         self.updateCellNpc(self.npc.portal[2][0], self.npc.portal[2][1])
     
     #perceive sensory at position x y
-    def perceiveSensory(self, agentPosition):
+    def perceiveSensory(self, agentPosition, bump, scream):
         #agentPosition in (x, y)
         #confounded, stench, tingle, glitter, bump, scream
         sensory = [0, 0, 0, 0, 0, 0] #intialize all sensory to off
@@ -152,6 +119,14 @@ class Map:
         #glitter indicator; agent in same cell as coin
         if(agentPosition == self.npc.coin):
             sensory[3] = 1
+        
+        #bump indicator
+        if(bump):
+            sensory[4] = 1
+        
+        #scream indicator
+        if(scream):
+            sensory[5] = 1
         
         #get the up down left right cell of the position agent is in 
         up = (agentPosition[0], agentPosition[1]+1)
@@ -169,6 +144,42 @@ class Map:
         
         return sensory
 
+    #print the map
+    def printMap(self, sensory):
+        self.spawnNPConMap() #before printing the map, update the relevant cell to indicate presence of npc
+        innerCellColumn = self.innerCell // 3
+        innerCellRow = self.innerCell // 3
+        print("-------------------------------------------------")
+        for i in range(self.rows-1, -1, -1): #to display such that lower row is at the bottom of map
+            for j in range(innerCellRow):
+                print("|", end="")
+                for k in range(self.columns):
+                    print(" ", end="")
+                    for l in range(innerCellColumn):
+                        print(self.map[i][k][j*innerCellRow+l]+" ", end = "")
+                    print("|", end="")
+                print()
+            print("-------------------------------------------------")
+        self.printSensory(sensory)
+
+    #print the sensory
+    def printSensory(self, sensory):
+        fullName = ["Confounded", "Stench", "Tingle", "Glitter", "Bump", "Scream"]
+        output = ""
+        for i in range(len(sensory)):
+            if(sensory[i] == 1): #indicator is on
+                output = output + fullName[i] + "—"
+            else: #indicator is off
+                output = output + fullName[i][0] + "—"
+        print("Percepts: " + output)
+        print()
+
+    #show x y coordinates on the map; not needed just to see the placement of x y
+    def showXY(self):
+        for i in range(self.rows):
+            for j in range(self.columns):
+                self.map[i][j][0] = str(j) # x = column
+                self.map[i][j][1] = str(i) # y = row
 
 class NPC:
     def __init__(self):
@@ -177,7 +188,7 @@ class NPC:
         self.wumpus = (1,3)
         self.coin = (2,3)
         self.portal = [(3,1), (3,3), (4,4)]
-
+        
     #spawn the npc location randomly 
     def spawnNPC(self, agentX, agentY, rows, columns):
         #x y should not be repeated, use a set to prevent repeation of coordinates
@@ -220,36 +231,29 @@ class Agent:
         self.map.updateCellAgent(self.x, self.y, self.x, self.y, self.orientation)
         self.map.updateCellSensory(self.sensory, self.x, self.y)     
 
-    #flow should be driver move/do an action on agent, preceive the surrounding then feed it to prolog agent 
     def moveForward(self):
+        bump = False
         print("Action sequence: move forward")
-        #depend on orientation move the agent 
-        #agent[x,y,orientation]
         oldX = self.x
         oldY = self.y
 
+        #depend on orientation move the agent 
         if(self.orientation=='north'): self.y = self.y + 1
         elif(self.orientation=='east'): self.x = self.x + 1 
         elif(self.orientation=='south'): self.y = self.y - 1 
         elif(self.orientation=='west'): self.x = self.x - 1 
 
-        #get sensory of the cell after making a move 
-        self.sensory = self.map.perceiveSensory((self.x, self.y))
-
-        # #check if bump into wall, valid x is range 1 to 4; valid y is range 1 to 5
+        #check if bump into wall, valid x is range 1 to 4; valid y is range 1 to 5
+        #bump to wall is out of the valid range
         if(self.x <=0 or self.x>=5 or self.y<=0 or self.y>=6):
             #do not let agent move to wall so return to old position
             self.x = oldX
             self.y = oldY
-            #get sensory again as the previous one will get for the position at wall
-            self.sensory = self.map.perceiveSensory((self.x, self.y))
-            #bump into wall, update indicator bump
-            self.sensory[4] = 1
+            bump = True
 
         #update the position on the map and print the map
         self.map.updateCellAgent(oldX, oldY, self.x, self.y, self.orientation)
-        self.map.updateCellSensory(self.sensory, self.x, self.y)
-        self.map.printMap(self.sensory)
+        return bump
     
     def turnLeft(self):
         print("Action sequence: turn left")
@@ -260,7 +264,6 @@ class Agent:
 
         #update the orientation on the map and print the map, x y no change
         self.map.updateCellAgent(self.x, self.y, self.x, self.y, self.orientation)
-        self.map.printMap(self.sensory)
 
     def turnRight(self):
         print("Action sequence: turn right")
@@ -271,26 +274,20 @@ class Agent:
 
         #update the orientation on the map and print the map, x y no change
         self.map.updateCellAgent(self.x, self.y, self.x, self.y, self.orientation)
-        self.map.printMap(self.sensory)
 
     def pickUp(self):
         print("Action sequence: pickup")
-        #pickup the coin and turn off the glitter in sensory
-        #remove the coin from npc
+        #if there is coin in current cell
         if((self.x, self.y) == self.map.npc.coin):
-            self.sensory[3] = 0
-            self.map.npc.coin = None
+            self.map.npc.coin = None #remove coin from npc
             print("Successfully pickup the coin")
-            self.map.updateCellSensory(self.sensory, self.x, self.y)
         else:
             print("No coin to pickup")
             
-        self.map.printMap(self.sensory)
-    
     def shoot(self):
+        scream = False #when wumpus killed, set scream to true
         print("Action sequence: shoot")
         #check if wumpus is ahead and in direction of agent to shoot
-        #turn on scream if it manage to kill the wumpus
         aheadX = self.x
         aheadY = self.y
         
@@ -302,12 +299,31 @@ class Agent:
 
         #check if wumpus ahead to shoot
         if((aheadX, aheadY) == self.map.npc.wumpus):
-            self.sensory[5] = 1 #scream indicator 
-            self.map.npc.wumpus = None
+            scream = True 
+            self.map.npc.wumpus = None #remove wumpus from npc
             self.map.updateCellKillWumpus(aheadX, aheadY) #location of wumpus is at aheadX and aheadY, need to remove from cell
-            print("Wumpus kill")
-            self.map.updateCellSensory(self.sensory, self.x, self.y)
+            print("Wumpus killed")
         else:
             print("Failed to kill wumpus")
 
+        return scream
+
+    def move(self, action):
+        bump = False
+        scream = False
+        if(action == "moveforward"):
+            bump = self.moveForward() #will teturn true if bump to wall
+        elif(action == "turnleft"):
+            self.turnLeft()
+        elif(action == "turnright"):
+            self.turnRight()
+        elif(action == "pickup"):
+            self.pickUp()
+        elif(action == "shoot"):
+            scream = self.shoot() #will return true if kill wumpus, there is a scream
+        
+        #bump and scream indicator are taken from the moveforward and shoot action then pass to percieveSensory to update the sensory list
+        self.sensory = self.map.perceiveSensory((self.x, self.y), bump, scream)
+        self.map.updateCellSensory(self.sensory, self.x, self.y)
+        #TODO call to prolog to assert action and pass the sensory
         self.map.printMap(self.sensory)
