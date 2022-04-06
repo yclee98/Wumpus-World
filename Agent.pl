@@ -7,7 +7,6 @@ reconsult('Agent.pl').
 
 %use asserta to add to beginning and retract to remove
 :-dynamic
-    orientation/1,
     current/3,
     visited/2,
     wumpus/2,
@@ -24,10 +23,11 @@ reconsult('Agent.pl').
 
 
 % initialize the status of the objectives and assets of the agent
-assertz(wumpus_alive)
-assertz(agent_alive)
-assertz(has_gold)
-assertz(hasarrow)
+assertz(wumpus_alive),
+assertz(agent_alive),
+assertz(has_gold),
+assertz(hasarrow),
+assertz(current(0, 0, rnorth)).
 
 reborn():-
     retractall(current(_, _, _)),
