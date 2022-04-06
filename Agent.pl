@@ -67,52 +67,52 @@ move(A, [Confounded, Stench, Tingle, Glitter, Bump, Scream]):-
 
 
 update_wumpus(0):-
-    current(Y,X,D),
+    current(X,Y,D),
 
     % if stench is not perceived, wumpus cannot be in adj rooms
     % "is" to evaluate mathematical expressions
-    Z1 is Y + 1, retract(wumpus(Z1, X)),
-    Z2 is Y - 1, retract(wumpus(Z2, X)),
-    Z3 is X + 1, retract(wumpus(Y, Z3)),
-    Z4 is X - 1, retract(wumpus(Y, Z4)).
+    Z1 is Y + 1, retract(wumpus(X, Z1)),
+    Z2 is Y - 1, retract(wumpus(X, Z2)),
+    Z3 is X + 1, retract(wumpus(Z3, Y)),
+    Z4 is X - 1, retract(wumpus(Z4, Y)).
 
 
 update_wumpus(1):-
-    current(Y,X,D),
-    stench(Y,X),
+    current(X,Y,D),
+    stench(X,Y),
 
     % if percieved smelly, update KB that wumpus MAY be in one of the adj rooms
-    Z1 is Y + 1, determine_wumpus(Z1, X),
-    Z2 is Y - 1, determine_wumpus(Z2, X),
-    Z3 is X + 1, determine_wumpus(Y, Z3),
-    Z4 is X - 1, determine_wumpus(Y, Z4).
+    Z1 is Y + 1, determine_wumpus(X, Z1),
+    Z2 is Y - 1, determine_wumpus(X, Z2),
+    Z3 is X + 1, determine_wumpus(Z3, Y),
+    Z4 is X - 1, determine_wumpus(Z4, Y).
 
 
 update_portal(0):-
-    current(Y,X,D),
+    current(X,Y,D),
 
     % if tingle is not perceived, portal cannot be in adj rooms
-    Z1 is Y + 1, retract(confoundus(Z1, X)),
-    Z2 is Y - 1, retract(confoundus(Z2, X)),
+    Z1 is Y + 1, retract(confoundus(X, Z1)),
+    Z2 is Y - 1, retract(confoundus(X, Z2)),
     Z3 is X + 1, retract(confoundus(Z3, Y)),
     Z4 is X - 1, retract(confoundus(Z4, Y)).
 
 
 % if perceived tingle, update KB that portal MAY be in one of the adj rooms
 update_portal(1):-
-    current(Y,X,D),
-    tingle(Y,X),
+    current(X,Y,D),
+    tingle(X,Y),
 
     % if tingle is perceived, portal MAY be in adj rooms
-    Z1 is Y + 1, assertz(confoundus(Z1, X)),
-    Z2 is Y - 1, assertz(confoundus(Z2, X)),
+    Z1 is Y + 1, assertz(confoundus(X, Z1)),
+    Z2 is Y - 1, assertz(confoundus(X, Z2)),
     Z3 is X + 1, assertz(confoundus(Z3, Y)),
     Z4 is X - 1, assertz(confoundus(Z4, Y)).
 
 
 % if percieve glitter, cell is inhabited by coin
 update_coin(1):-
-    current(Y,X,D),
+    current(X,Y,D),
     glitter(X,Y).
 
 
