@@ -7,6 +7,7 @@ reconsult('Agent.pl').
 
 %use asserta to add to beginning and retract to remove
 :-dynamic
+    orientation/1,
     current/3,
     visited/2,
     wumpus/2,
@@ -57,13 +58,40 @@ reposition():-
     asserta(current(0,0,rnorth)),
     asserta(confoundus(0,0)).
 
-
+% A = Forward, TurnLeft, TurnRight
+% D = rnorth, rsouth, reast, rwest
 % L = [Confounded, Stench, Tingle, Glitter, Bump, Scream]
 % 1 = on, 0 = off
 move(A, [Confounded, Stench, Tingle, Glitter, Bump, Scream]):-
+    update_action(A),
     update_wumpus(Stench),
     update_portal(Tingle),
     update_coin(Glitter).
+
+update_action(TurnLeft):-
+    current(X, Y, D),
+    (D == rnorth -> retract(current(X, Y, D)), assertz(current(X, Y, rwest));
+     D == rsouth -> retract(current(X, Y, D)), assertz(current(X, Y, reast));
+     D == reast -> retract(current(X, Y, D)), assertz(current(X, Y, rnorth));
+     D == rwest -> retract(current(X, Y, D)), assertz(current(X, Y, rsouth))).
+
+
+update_action(TurnRight):-
+    current(X, Y, D),
+    (D == rnorth -> retract(current(X, Y, D)), assertz(current(X, Y, reast));
+     D == rsouth -> retract(current(X, Y, D)), assertz(current(X, Y, rwest));
+     D == reast -> retract(current(X, Y, D)), assertz(current(X, Y, rsouth));
+     D == rwest -> retract(current(X, Y, D)), assertz(current(X, Y, rnorth))).
+
+
+update_action(Forward):-
+    % get orientation D
+    current(X, Y, D),
+
+    (D == rnorth -> retract(current(X, Y, D)), assertz(current(X, Y+1, D));
+     D == rsouth -> retract(current(X, Y, D)), assertz(current(X, Y-1, D));
+     D == reast -> retract(current(X, Y, D)), assertz(current(X+1, Y, D));
+     D == rwest -> retract(current(X, Y, D)), assertz(current(X-1, Y, D))).
 
 
 update_wumpus(0):-
