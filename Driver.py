@@ -16,7 +16,7 @@ def main():
     # npc.spawnNPC(agentX, agentY, rows, columns) #if want to random npc location
     map.setNpc(npc)
 
-    #absoulte map prinout
+    #absolute map prinout
     npc.printNPC()
     # map.showXY()
     map.printMap(agent.sensory)
