@@ -67,53 +67,62 @@ move(A, [Confounded, Stench, Tingle, Glitter, Bump, Scream]):-
 
 
 update_wumpus(0):-
-    current(X,Y,D),
+    current(Y,X,D),
 
     % if stench is not perceived, wumpus cannot be in adj rooms
     % "is" to evaluate mathematical expressions
-    Y2 is Y + 1, retract(wumpus(X, Y2)),
-    Y2 is Y - 1, retract(wumpus(X, Y2)),
-    X2 is X + 1, retract(wumpus(X2, Y)),
-    X2 is X - 1, retract(wumpus(X2, Y)).
+    Z1 is Y + 1, retract(wumpus(Z1, X)),
+    Z2 is Y - 1, retract(wumpus(Z2, X)),
+    Z3 is X + 1, retract(wumpus(Y, Z3)),
+    Z4 is X - 1, retract(wumpus(Y, Z4)).
 
 
 update_wumpus(1):-
-    current(X,Y,D),
-    stench(X,Y),
+    current(Y,X,D),
+    stench(Y,X),
 
     % if percieved smelly, update KB that wumpus MAY be in one of the adj rooms
-    Y2 is Y + 1, assertz(wumpus(X, Y2)),
-    Y2 is Y - 1, assertz(wumpus(X, Y2)),
-    X2 is X + 1, assertz(wumpus(X2, Y)),
-    X2 is X - 1, assertz(wumpus(X2, Y)).
+    Z1 is Y + 1, determine_wumpus(Z1, X)),
+    Z2 is Y - 1, determine_wumpus(Z2, X)),
+    Z3 is X + 1, determine_wumpus(Y, Z3)),
+    Z4 is X - 1, determine_wumpus(Y, Z4)).
 
 
 update_portal(0):-
-    current(X,Y,D),
+    current(Y,X,D),
 
     % if tingle is not perceived, portal cannot be in adj rooms
-    Y2 is Y + 1, retract(confoundus(X, Y2)),
-    Y2 is Y - 1, retract(confoundus(X, Y2)),
-    X2 is X + 1, retract(confoundus(X2, Y)),
-    X2 is X - 1, retract(confoundus(X2, Y)).
+    Z1 is Y + 1, retract(confoundus(Z1, X)),
+    Z2 is Y - 1, retract(confoundus(Z2, X)),
+    Z3 is X + 1, retract(confoundus(Z3, Y)),
+    Z4 is X - 1, retract(confoundus(Z4, Y)).
 
 
-% if percieved tingle, update KB that portal MAY be in one of the adj rooms
+% if perceived tingle, update KB that portal MAY be in one of the adj rooms
 update_portal(1):-
-    current(X,Y,D),
-    tingle(X,Y),
+    current(Y,X,D),
+    tingle(Y,X),
 
     % if tingle is perceived, portal MAY be in adj rooms
-    Y2 is Y + 1, assertz(confoundus(X, Y2)),
-    Y2 is Y - 1, assertz(confoundus(X, Y2)),
-    X2 is X + 1, assertz(confoundus(X2, Y)),
-    X2 is X - 1, assertz(confoundus(X2, Y)).
+    Z1 is Y + 1, assertz(confoundus(Z1, X)),
+    Z2 is Y - 1, assertz(confoundus(Z2, X)),
+    Z3 is X + 1, assertz(confoundus(Z3, Y)),
+    Z4 is X - 1, assertz(confoundus(Z4, Y)).
 
 
 % if percieve glitter, cell is inhabited by coin
 update_coin(1):-
-    current(X,Y,D),
+    current(Y,X,D),
     glitter(X,Y).
+
+
+% find overlapping wumpus(X,Y) rooms in KB (previously existed), wumpus may be in those overlapping rooms
+determine_wumpus(X,Y):-
+    % SYNTAX: (cond -> if-func ; else-func), \+ : Negation
+    % if: there is prev wumpus(X,Y) entry with the exact same coords, More likely wumpus is in that room(s) -> already recorded
+    % else: if there is no prior entry, add the new entry
+
+    (\+wumpus(X,Y) -> assertz(wumpus(X, Y)) : ).
 
 explore(L):-
 
