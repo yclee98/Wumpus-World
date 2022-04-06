@@ -82,10 +82,10 @@ update_wumpus(1):-
     stench(Y,X),
 
     % if percieved smelly, update KB that wumpus MAY be in one of the adj rooms
-    Z1 is Y + 1, determine_wumpus(Z1, X)),
-    Z2 is Y - 1, determine_wumpus(Z2, X)),
-    Z3 is X + 1, determine_wumpus(Y, Z3)),
-    Z4 is X - 1, determine_wumpus(Y, Z4)).
+    Z1 is Y + 1, determine_wumpus(Z1, X),
+    Z2 is Y - 1, determine_wumpus(Z2, X),
+    Z3 is X + 1, determine_wumpus(Y, Z3),
+    Z4 is X - 1, determine_wumpus(Y, Z4).
 
 
 update_portal(0):-
