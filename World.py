@@ -1,4 +1,11 @@
 import random
+from pyswip import Prolog
+
+prolog = Prolog()
+prolog.consult('Agent.pl')
+#add reborn to end game reset 
+bool(list(prolog.query("reborn()"))) 
+
 
 ####### WHEN REFERENCING THE MAP DO map[y][x], map[row][column]
 ####### Rows correspond to y coordinates and columns correspond to x coordinates for the map(in manual 2.21)
@@ -57,44 +64,6 @@ class Map:
         #wumpus died, print . at that cell instead 
         self.map[npcY][npcX][3] = "."
         self.map[npcY][npcX][5] = "."
-
-    #update cell sensory indicator with symbols at position x y 
-    def updateCellSensory(self, sensory, x, y):
-        sensorySymbol = ["%", "=", "T", "*", "B", "@"] #confounded, stench, tingle, glitter, bump, scream
-        #cell 0 to 2
-        for i in range(0,3,1): #confounded, stench, tingle
-            if(sensory[i] == 1): 
-                self.map[y][x][i] = sensorySymbol[i]
-            else:
-                self.map[y][x][i] = "."
-        #cell 6 to 8
-        for i in range(6,9,1): #glitter, bump, scream
-            if(sensory[i-3] == 1):
-                self.map[y][x][i] = sensorySymbol[i-3]
-            else:
-                self.map[y][x][i] = "."
-
-    #when moving the agent, update the old cell and new cell
-    def updateCellAgent(self, oldX, oldY, newX, newY, orientation):
-        #update cell 3 and 5 of the previous cell agent is to '.' 
-        #update cell 4 of the previous cell to S (visited safe map cell)
-        self.map[oldY][oldX][3] = '.'
-        self.map[oldY][oldX][5] = '.'
-        self.map[oldY][oldX][4] = 'S'
-        
-        #update cell 3 and 5 of the new cell agent is to '-'
-        self.map[newY][newX][3] = '—'
-        self.map[newY][newX][5] = '—'
-        #update cell 4 to the orientation of the agent
-        #this is the absolute orientation 
-        if(orientation=='north'):
-            self.map[newY][newX][4] = '^'
-        elif(orientation=='south'):
-            self.map[newY][newX][4] = 'v'
-        elif(orientation=='east'):
-            self.map[newY][newX][4] = '>'
-        elif(orientation=='west'):
-            self.map[newY][newX][4] = '<'
     
     #show the npc on the map;
     def spawnNPConMap(self):
@@ -146,7 +115,7 @@ class Map:
 
     #print the map
     def printMap(self, sensory):
-        self.spawnNPConMap() #before printing the map, update the relevant cell to indicate presence of npc
+        #self.spawnNPConMap() #before printing the map, update the relevant cell to indicate presence of npc
         innerCellColumn = self.innerCell // 3
         innerCellRow = self.innerCell // 3
         print("-------------------------------------------------")
@@ -174,12 +143,6 @@ class Map:
         print("Percepts: " + output)
         print()
 
-    #show x y coordinates on the map; not needed just to see the placement of x y
-    def showXY(self):
-        for i in range(self.rows):
-            for j in range(self.columns):
-                self.map[i][j][0] = str(j) # x = column
-                self.map[i][j][1] = str(i) # y = row
 
 class NPC:
     def __init__(self):
@@ -228,8 +191,11 @@ class Agent:
         self.sensory = [1,0,0,0,0,0]
 
     def spawnAgent(self):
-        self.map.updateCellAgent(self.x, self.y, self.x, self.y, self.orientation)
-        self.map.updateCellSensory(self.sensory, self.x, self.y)     
+        bool(list(prolog.query("reborn()")))
+        bool(list(prolog.query(f"reposition({self.sensory})")))
+        #print the relative map at the inital start of the game to test if agent get the confounded knowledge
+        self.queryAgentKnowledge()
+        self.map.printMap(self.sensory)
 
     def moveForward(self):
         bump = False
@@ -251,8 +217,6 @@ class Agent:
             self.y = oldY
             bump = True
 
-        #update the position on the map and print the map
-        self.map.updateCellAgent(oldX, oldY, self.x, self.y, self.orientation)
         return bump
     
     def turnLeft(self):
@@ -262,8 +226,6 @@ class Agent:
         elif(self.orientation=='south'): self.orientation='east'
         elif(self.orientation=='west'): self.orientation='south'
 
-        #update the orientation on the map and print the map, x y no change
-        self.map.updateCellAgent(self.x, self.y, self.x, self.y, self.orientation)
 
     def turnRight(self):
         print("Action sequence: turn right")
@@ -272,8 +234,6 @@ class Agent:
         elif(self.orientation=='south'): self.orientation='west'
         elif(self.orientation=='west'): self.orientation='north'
 
-        #update the orientation on the map and print the map, x y no change
-        self.map.updateCellAgent(self.x, self.y, self.x, self.y, self.orientation)
 
     def pickUp(self):
         print("Action sequence: pickup")
@@ -301,7 +261,7 @@ class Agent:
         if((aheadX, aheadY) == self.map.npc.wumpus):
             scream = True 
             self.map.npc.wumpus = None #remove wumpus from npc
-            self.map.updateCellKillWumpus(aheadX, aheadY) #location of wumpus is at aheadX and aheadY, need to remove from cell
+            #self.map.updateCellKillWumpus(aheadX, aheadY) #location of wumpus is at aheadX and aheadY, need to remove from cell
             print("Wumpus killed")
         else:
             print("Failed to kill wumpus")
@@ -325,6 +285,96 @@ class Agent:
         
         #bump and scream indicator are taken from the moveforward and shoot action then pass to percieveSensory to update the sensory list
         self.sensory = self.map.perceiveSensory((self.x, self.y), bump, scream)
-        self.map.updateCellSensory(self.sensory, self.x, self.y)
-        #TODO call to prolog to query action and pass the sensory
+        
+        #call the move on the prolog side then query the knowledge of the agent to update the map
+        bool(list(prolog.query(f"move({action},{self.sensory})")))
+        self.queryAgentKnowledge()
         self.map.printMap(self.sensory)
+
+    
+    def queryAgentKnowledge(self):
+        #get relative postion
+        current = list(prolog.query("current(X,Y,D)"))[0]
+        rx = current['X']
+        ry = current['Y']
+        rd = current['D']
+        print(f"agent relative {rx} {ry} {rd}")
+
+        self.queryPossibleConfoundus(rx, ry)
+        self.queryPossibleWumpus(rx, ry)
+
+        self.qeurySensory(rx, ry)
+        self.queryVisited(rx, ry, rd)
+        self.updateAgentPosition(rd)
+
+    
+    def queryPossibleWumpus(self, rx, ry):
+        #query agent for wumpus location and use offset to represent in map
+        offsetX = self.x - rx
+        offsetY = self.y - ry
+        #valid game range for x is range 1 to 4; valid y is range 1 to 5
+        for i in list(prolog.query("wumpus(X,Y)")):
+            possibleX = i['X'] + offsetX
+            possibleY = i['Y'] + offsetY
+            if(possibleX > 0 and possibleX < 5 and possibleY > 0 and possibleY < 6):
+                self.map.map[possibleY][possibleX][4] = 'W'
+
+    def queryPossibleConfoundus(self, rx, ry):
+        #query agent for confoundus location and use offset to represent in map
+        offsetX = self.x - rx
+        offsetY = self.y - ry
+         #valid game range for x is range 1 to 4; valid y is range 1 to 5
+        for i in list(prolog.query("confoundus(X,Y)")):
+            possibleX = i['X'] + offsetX
+            possibleY = i['Y'] + offsetY
+            if(possibleX > 0 and possibleX < 5 and possibleY > 0 and possibleY < 6):
+                self.map.map[possibleY][possibleX][4] = 'O'
+            
+
+    def queryVisited(self, rx, ry, rd):
+        #try to query the old position and check if it is visited
+        #if visited update the cell to S
+        try:
+            previousPosition = list(prolog.query("current(X,Y,D)"))[1]
+            previousX = previousPosition['X']
+            previousY = previousPosition['Y']
+            if(bool(list(prolog.query(f"visited({previousX}, {previousY})")))):
+                absolutePreviousX = self.x - (rx - previousX)
+                absolutePreviousY = self.y - (ry - previousY)
+                self.map.map[absolutePreviousY][absolutePreviousX][3] = '.'
+                self.map.map[absolutePreviousY][absolutePreviousX][5] = '.'
+                self.map.map[absolutePreviousY][absolutePreviousX][4] = 'S'
+        except IndexError:
+            #no previous position; at the start of the game 
+            pass
+        
+    def updateAgentPosition(self, rd):
+        #update cell 3 and 5 of the new cell agent is to '-'
+        self.map.map[self.y][self.x][3] = '—'
+        self.map.map[self.y][self.x][5] = '—'
+        #update cell 4 to the relative orientation of the agent
+        if(rd=='rnorth'):
+            self.map.map[self.y][self.x][4] = '^'
+        elif(rd=='rsouth'):
+            self.map.map[self.y][self.x][4] = 'v'
+        elif(rd=='reast'):
+            self.map.map[self.y][self.x][4] = '>'
+        elif(rd=='rwest'):
+            self.map.map[self.y][self.x][4] = '<'
+
+    def qeurySensory(self, rx, ry):
+        #update confoundus, stench, tingle, glitter 
+        #query the sensory information
+        if bool(list(prolog.query(f"confoundus({rx},{ry})"))):
+            self.map.map[self.y][self.x][0] = '%'
+        if bool(list(prolog.query(f"stench({rx},{ry})"))):
+            self.map.map[self.y][self.x][1] = '='
+        if bool(list(prolog.query(f"tingle({rx},{ry})"))):
+            self.map.map[self.y][self.x][2] = 'T'
+        if bool(list(prolog.query(f"glitter({rx},{ry})"))):
+            self.map.map[self.y][self.x][0] = '*'
+
+        #update bump
+
+        #update scream
+

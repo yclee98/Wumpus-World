@@ -44,8 +44,7 @@ reborn():-
     asserta(current(0, 0, rnorth)).
 
 
-
-reposition([Confounded, Stench, Tingle, Glitter, Bump, Scream]):- 
+reposition([Confounded, Stench, Tingle, _, _, _]):- 
     retractall(current(_, _, _)),
     retractall(visited(_, _)),
     retractall(confoundus(_, _)),
@@ -55,7 +54,13 @@ reposition([Confounded, Stench, Tingle, Glitter, Bump, Scream]):-
     retractall(safe(_, _)),
 
     asserta(current(0,0,rnorth)),
-    asserta(confoundus(0,0)).
+
+    current(X, Y, _),
+    (Confounded == 1 -> (\+confoundus(X,Y) -> asserta(confoundus(X, Y))));
+
+    update_wumpus(Stench);
+    update_portal(Tingle).
+    
 
 
 % A = Forward, TurnLeft, TurnRight
@@ -63,88 +68,89 @@ reposition([Confounded, Stench, Tingle, Glitter, Bump, Scream]):-
 % L = [Confounded, Stench, Tingle, Glitter, Bump, Scream]
 % 1 = on, 0 = off
 move(A, [Confounded, Stench, Tingle, Glitter, Bump, Scream]):-
-    current(X, Y, _),
-    (Confounded == 1 -> asserta(confoundus(X,Y));true),
-
+    once(current(X, Y, _)),
+    (Confounded == 1 -> (\+confoundus(X,Y) -> asserta(confoundus(X, Y))));
+    
     update_action(A),
     
-    % need to make it true so that if function return false it will still run the code 
-    \+ update_wumpus(Stench) -> true,
-    \+ update_portal(Tingle) -> true,
-    \+ update_coin(Glitter) -> true.
+    % use ; for or then at the end return true if not the move will return false if all the 'or' clauses is false
+    update_wumpus(Stench);
+    update_portal(Tingle);
+    update_coin(Glitter);
+    true. 
 
 update_action(turnleft):-
     write("turnleft "),
-    current(X, Y, D),
-    (D == rnorth -> retract(current(X, Y, D)), asserta(current(X, Y, rwest));
-     D == rsouth -> retract(current(X, Y, D)), asserta(current(X, Y, reast));
-     D == reast -> retract(current(X, Y, D)), asserta(current(X, Y, rnorth));
-     D == rwest -> retract(current(X, Y, D)), asserta(current(X, Y, rsouth))).
+    once(current(X, Y, D)),
+    (D == rnorth -> asserta(current(X, Y, rwest));
+     D == rsouth -> asserta(current(X, Y, reast));
+     D == reast -> asserta(current(X, Y, rnorth));
+     D == rwest -> asserta(current(X, Y, rsouth))).
 
 
 update_action(turnright):-
     write("turnright "),
-    current(X, Y, D),
-    (D == rnorth -> retract(current(X, Y, D)), asserta(current(X, Y, reast));
-     D == rsouth -> retract(current(X, Y, D)), asserta(current(X, Y, rwest));
-     D == reast -> retract(current(X, Y, D)), asserta(current(X, Y, rsouth));
-     D == rwest -> retract(current(X, Y, D)), asserta(current(X, Y, rnorth))).
+    once(current(X, Y, D)),
+    (D == rnorth -> asserta(current(X, Y, reast));
+     D == rsouth -> asserta(current(X, Y, rwest));
+     D == reast -> asserta(current(X, Y, rsouth));
+     D == rwest -> asserta(current(X, Y, rnorth))).
 
 
 update_action(moveforward):-
     write("forward "),
-    current(X, Y, D),
+    once(current(X, Y, D)),
     asserta(visited(X,Y)), %make old position as visited before moving forward
     Z1 is Y + 1,
     Z2 is Y - 1, 
     Z3 is X + 1, 
     Z4 is X - 1, 
     
-    (D == rnorth -> retract(current(X, Y, D)), asserta(current(X, Z1, D));
-     D == rsouth -> retract(current(X, Y, D)), asserta(current(X, Z2, D));
-     D == reast -> retract(current(X, Y, D)), asserta(current(Z3, Y, D));
-     D == rwest -> retract(current(X, Y, D)), asserta(current(Z4, Y, D))).
+    (D == rnorth -> asserta(current(X, Z1, D));
+     D == rsouth -> asserta(current(X, Z2, D));
+     D == reast -> asserta(current(Z3, Y, D));
+     D == rwest -> asserta(current(Z4, Y, D))).
 
 
 update_wumpus(0):-
     write("stench0 "),
-    current(X,Y,D),
+    once(current(X,Y,D)),
 
     % if stench is not perceived, wumpus cannot be in adj rooms
     % "is" to evaluate mathematical expressions
-    Z1 is Y + 1, retract(wumpus(X, Z1)),
-    Z2 is Y - 1, retract(wumpus(X, Z2)),
-    Z3 is X + 1, retract(wumpus(Z3, Y)),
-    Z4 is X - 1, retract(wumpus(Z4, Y)).
+    Z1 is Y + 1, (retract(wumpus(X, Z1)) ->true; true),
+    Z2 is Y - 1, (retract(wumpus(X, Z2)) ->true; true),
+    Z3 is X + 1, (retract(wumpus(Z3, Y)) ->true; true),
+    Z4 is X - 1, (retract(wumpus(Z4, Y)) ->true; true).
 
 
 update_wumpus(1):-
     write("stench1 "),
-    current(X,Y,D),
+    once(current(X,Y,D)),
     asserta(stench(X,Y)),
 
     % if percieved stench, update KB that wumpus MAY be in one of the adj rooms
-    Z1 is Y + 1, determine_wumpus(X, Z1),
-    Z2 is Y - 1, determine_wumpus(X, Z2),
-    Z3 is X + 1, determine_wumpus(Z3, Y),
-    Z4 is X - 1, determine_wumpus(Z4, Y).
+    Z1 is Y + 1, (\+wumpus(X,Z1) -> asserta(wumpus(X, Z1)); true),
+    Z2 is Y - 1, (\+wumpus(X,Z2) -> asserta(wumpus(X, Z2)); true),
+    Z3 is X + 1, (\+wumpus(Z3,Y) -> asserta(wumpus(Z3, Y)); true),
+    Z4 is X - 1, (\+wumpus(Z4,Y) -> asserta(wumpus(Z4, Y)); true).
 
 
 update_portal(0):-
     write("tingle0 "),
-    current(X,Y,D),
+    once(current(X,Y,D)),
 
     % if tingle is not perceived, portal cannot be in adj rooms
-    Z1 is Y + 1, retract(confoundus(X, Z1)),
-    Z2 is Y - 1, retract(confoundus(X, Z2)),
-    Z3 is X + 1, retract(confoundus(Z3, Y)),
-    Z4 is X - 1, retract(confoundus(Z4, Y)).
+    Z1 is Y + 1, (retract(confoundus(X, Z1))->true; true),
+    Z2 is Y - 1, (retract(confoundus(X, Z2))->true; true),
+    Z3 is X + 1, (retract(confoundus(Z3, Y))->true; true),
+    Z4 is X - 1, (retract(confoundus(Z4, Y))->true; true).
 
 
 % if perceived tingle, update KB that portal MAY be in one of the adj rooms
 update_portal(1):-
     write("tingle1 "),
-    current(X,Y,D),
+    once(current(X,Y,D)),
     asserta(tingle(X,Y)),
 
     % if tingle is perceived, portal MAY be in adj rooms
@@ -157,18 +163,18 @@ update_portal(1):-
 % if percieve glitter, cell is inhabited by coin
 update_coin(1):-
     write("glitter1 "),
-    current(X,Y,D),
+    once(current(X,Y,D)),
     asserta(glitter(X,Y)).
 
 
 % find overlapping wumpus(X,Y) rooms in KB (previously existed), wumpus may be in those overlapping rooms
-determine_wumpus(X,Y):-
-    write("determine wumpus "),
+%determine_wumpus(X,Y):-
+    %write("determine wumpus "),
     % SYNTAX: (cond -> if-func ; else-func), \+ : Negation
     % if: there is prev wumpus(X,Y) entry with the exact same coords, More likely wumpus is in that room(s) -> already recorded
     % else: if there is no prior entry, add the new entry
 
-    (\+wumpus(X,Y) -> asserta(wumpus(X, Y)); true).
+    %(\+wumpus(X,Y) -> asserta(wumpus(X, Y)); true).
 
 
 

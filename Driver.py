@@ -10,16 +10,17 @@ def main():
     npc = NPC()
     agent = Agent(map)
 
-    #create map and spawn agent/npc on map
+    #create map and spawn npc
     map.createMap()
-    agent.spawnAgent()
-    # npc.spawnNPC(agentX, agentY, rows, columns) #if want to random npc location
     map.setNpc(npc)
 
-    #absolute map prinout
+    #absolute map prinout 
     npc.printNPC()
-    # map.showXY()
     map.printMap(agent.sensory)
+
+    #spawn the agent which will also query the prolog for knowledge, only confoundus is on at the start
+    agent.spawnAgent()
+    
     
     move = ""
     while(move != "1"):
