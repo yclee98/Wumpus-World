@@ -300,6 +300,7 @@ class Agent:
         rd = current['D']
         print(f"agent relative {rx} {ry} {rd}")
 
+        self.querySafeUnvisited(rx, ry)
         self.queryPossibleConfoundus(rx, ry)
         self.queryPossibleWumpus(rx, ry)
 
@@ -312,41 +313,60 @@ class Agent:
         #query agent for wumpus location and use offset to represent in map
         offsetX = self.x - rx
         offsetY = self.y - ry
+        print("Possible wumpus: ", end=" ")
         #valid game range for x is range 1 to 4; valid y is range 1 to 5
         for i in list(prolog.query("wumpus(X,Y)")):
             possibleX = i['X'] + offsetX
             possibleY = i['Y'] + offsetY
+            print(f"({possibleX}, {possibleY})", end = " ")
             if(possibleX > 0 and possibleX < 5 and possibleY > 0 and possibleY < 6):
                 self.map.map[possibleY][possibleX][4] = 'W'
+        print()
 
     def queryPossibleConfoundus(self, rx, ry):
         #query agent for confoundus location and use offset to represent in map
         offsetX = self.x - rx
         offsetY = self.y - ry
-         #valid game range for x is range 1 to 4; valid y is range 1 to 5
+        print("Possible confoundus: ", end=" ")
+        #valid game range for x is range 1 to 4; valid y is range 1 to 5
         for i in list(prolog.query("confoundus(X,Y)")):
             possibleX = i['X'] + offsetX
             possibleY = i['Y'] + offsetY
+            print(f"({possibleX}, {possibleY})", end = " ")
             if(possibleX > 0 and possibleX < 5 and possibleY > 0 and possibleY < 6):
                 self.map.map[possibleY][possibleX][4] = 'O'
-            
+        print()
+    
+    def querySafeUnvisited(self, rx, ry):
+        #query agent for safe unvisited location and use offset to represent in map
+        offsetX = self.x - rx
+        offsetY = self.y - ry
+        print("Possible unvisited safe: ", end=" ")
+        #valid game range for x is range 1 to 4; valid y is range 1 to 5
+        for i in list(prolog.query("safe(X,Y)")):
+            possibleX = i['X'] + offsetX
+            possibleY = i['Y'] + offsetY
+            print(f"({possibleX}, {possibleY})", end = " ")
+            if(possibleX > 0 and possibleX < 5 and possibleY > 0 and possibleY < 6):
+                self.map.map[possibleY][possibleX][4] = 's'
+        print()
 
     def queryVisited(self, rx, ry, rd):
-        #try to query the old position and check if it is visited
-        #if visited update the cell to S
-        try:
-            previousPosition = list(prolog.query("current(X,Y,D)"))[1]
-            previousX = previousPosition['X']
-            previousY = previousPosition['Y']
-            if(bool(list(prolog.query(f"visited({previousX}, {previousY})")))):
-                absolutePreviousX = self.x - (rx - previousX)
-                absolutePreviousY = self.y - (ry - previousY)
-                self.map.map[absolutePreviousY][absolutePreviousX][3] = '.'
-                self.map.map[absolutePreviousY][absolutePreviousX][5] = '.'
-                self.map.map[absolutePreviousY][absolutePreviousX][4] = 'S'
-        except IndexError:
-            #no previous position; at the start of the game 
-            pass
+        #query agent for visited location and use offset to represent in map
+        offsetX = self.x - rx
+        offsetY = self.y - ry
+        print("Visited: ", end=" ")
+        #valid game range for x is range 1 to 4; valid y is range 1 to 5
+        for i in list(prolog.query("visited(X,Y)")):
+            possibleX = i['X'] + offsetX
+            possibleY = i['Y'] + offsetY
+            print(f"({possibleX}, {possibleY})", end = " ")
+            if(possibleX > 0 and possibleX < 5 and possibleY > 0 and possibleY < 6):
+                self.map.map[possibleY][possibleX][3] = '.'
+                self.map.map[possibleY][possibleX][5] = '.'
+                self.map.map[possibleY][possibleX][4] = 'S'
+        print()
+
         
     def updateAgentPosition(self, rd):
         #update cell 3 and 5 of the new cell agent is to '-'
@@ -372,7 +392,7 @@ class Agent:
         if bool(list(prolog.query(f"tingle({rx},{ry})"))):
             self.map.map[self.y][self.x][2] = 'T'
         if bool(list(prolog.query(f"glitter({rx},{ry})"))):
-            self.map.map[self.y][self.x][0] = '*'
+            self.map.map[self.y][self.x][6] = '*'
 
         #update bump
         #query if the first and second current is the same it means it did not move so a bump
