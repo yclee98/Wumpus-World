@@ -375,6 +375,17 @@ class Agent:
             self.map.map[self.y][self.x][0] = '*'
 
         #update bump
+        #query if the first and second current is the same it means it did not move so a bump
+        try:
+            newPosition = list(prolog.query("current(X,Y,D)"))[0]
+            previousPosition = list(prolog.query("current(X,Y,D)"))[1]
+            if(newPosition == previousPosition): 
+                self.map.map[self.y][self.x][7] = 'B'
+            else:
+                self.map.map[self.y][self.x][7] = '.'
+        except IndexError:
+            #no previous position; at the start of the game 
+            pass
 
         #update scream
 

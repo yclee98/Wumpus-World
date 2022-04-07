@@ -55,7 +55,7 @@ reposition([Confounded, Stench, Tingle, _, _, _]):-
 
     asserta(current(0,0,rnorth)),
 
-    current(X, Y, _),
+    once(current(X, Y, _)),
     (Confounded == 1 -> (\+confoundus(X,Y) -> asserta(confoundus(X, Y))));
 
     update_wumpus(Stench);
@@ -67,17 +67,24 @@ reposition([Confounded, Stench, Tingle, _, _, _]):-
 % D = rnorth, rsouth, reast, rwest
 % L = [Confounded, Stench, Tingle, Glitter, Bump, Scream]
 % 1 = on, 0 = off
+% sensory is received after making the move on the python side so need to update_action first before responsing to the sensory
 move(A, [Confounded, Stench, Tingle, Glitter, Bump, Scream]):-
-    once(current(X, Y, _)),
-    (Confounded == 1 -> (\+confoundus(X,Y) -> asserta(confoundus(X, Y))));
+    once(current(X, Y, D)), %old position
+
+    %if bump occur dont do an action but instead assert current position to be the same 
+    (Bump \= 1 -> update_action(A); asserta(current(X,Y,D)));
+
+    once(current(X, Y, D)), %new position after action
+
+    %if confounded indicator on then update accordingly provided that is is not already inside 
+    (Confounded == 1 
+        -> (\+confoundus(X,Y) -> asserta(confoundus(X, Y)))
+    );
     
-    update_action(A),
-    
-    % use ; for or then at the end return true if not the move will return false if all the 'or' clauses is false
+    % use ; for or 
     update_wumpus(Stench);
     update_portal(Tingle);
-    update_coin(Glitter);
-    true. 
+    update_coin(Glitter). 
 
 update_action(turnleft):-
     write("turnleft "),
@@ -114,7 +121,7 @@ update_action(moveforward):-
 
 update_wumpus(0):-
     write("stench0 "),
-    once(current(X,Y,D)),
+    once(current(X,Y,_)),
 
     % if stench is not perceived, wumpus cannot be in adj rooms
     % "is" to evaluate mathematical expressions
@@ -126,7 +133,7 @@ update_wumpus(0):-
 
 update_wumpus(1):-
     write("stench1 "),
-    once(current(X,Y,D)),
+    once(current(X,Y,_)),
     asserta(stench(X,Y)),
 
     % if percieved stench, update KB that wumpus MAY be in one of the adj rooms
@@ -138,7 +145,7 @@ update_wumpus(1):-
 
 update_portal(0):-
     write("tingle0 "),
-    once(current(X,Y,D)),
+    once(current(X,Y,_)),
 
     % if tingle is not perceived, portal cannot be in adj rooms
     Z1 is Y + 1, (retract(confoundus(X, Z1))->true; true),
@@ -150,7 +157,7 @@ update_portal(0):-
 % if perceived tingle, update KB that portal MAY be in one of the adj rooms
 update_portal(1):-
     write("tingle1 "),
-    once(current(X,Y,D)),
+    once(current(X,Y,_)),
     asserta(tingle(X,Y)),
 
     % if tingle is perceived, portal MAY be in adj rooms
@@ -163,7 +170,7 @@ update_portal(1):-
 % if percieve glitter, cell is inhabited by coin
 update_coin(1):-
     write("glitter1 "),
-    once(current(X,Y,D)),
+    once(current(X,Y,_)),
     asserta(glitter(X,Y)).
 
 
