@@ -244,7 +244,7 @@ determine_wumpus(X,Y):-
 
     % before marking a room as possible wumpus inhabited, check its adj rooms if there is a stench.
     (\+wumpus(X,Y) 
-        -> check_wumpus_adj_rm_stench(wumpus(X, Y))
+        -> check_wumpus_adj_rm_stench(wumpus(X, Y), true)
         ; true).
 
 % check if the adj rooms have stench
