@@ -8,12 +8,12 @@
     glitter/2,
     stench/2,
     safe/2,
-    agent_loc/2.
-    hasarrow/0.
-    wumpus_alive/0.
-    agent_alive/0.
-    has_gold/0.
-
+    agent_loc/2,
+    hasarrow/0,
+    wumpus_alive/0,
+    agent_alive/0,
+    has_gold/0,
+    initial_stench/0.
 
 
 reborn():-
@@ -163,7 +163,7 @@ update_wumpus(1):-
     write("stench1 "),
     once(current(X,Y,_)),
     asserta(stench(X,Y)),
-    
+
     % if percieved stench, update KB that wumpus MAY be in one of the adj rooms
     Z1 is Y + 1, (determine_wumpus(X, Z1) ->true; true),
     Z2 is Y - 1, (determine_wumpus(X, Z2) ->true; true),
@@ -192,12 +192,14 @@ update_portal(1):-
     Z1 is Y + 1, (determine_confoundus(X, Z1) ->true; true),
     Z2 is Y - 1, (determine_confoundus(X, Z2) ->true; true),
     Z3 is X + 1, (determine_confoundus(Z3, Y) ->true; true),
-    Z4 is X - 1, (determine_confoundus(Z4, Y) ->true; true).
+    Z4 is X - 1, (determine_confoundus(Z4, Y) ->true; true),
+
 
 % to update confoundus indicator
 update_portal(0, indicator):-
     write("confoundus0 "),
     true.
+
 
 update_portal(1, indicator):-
     write("confoundus1 "),
@@ -206,15 +208,18 @@ update_portal(1, indicator):-
         -> asserta(confoundus(X, Y))
         ; true).
 
+
 update_coin(0):-
     write("glitter0 "),
     true.
+
 
 % if percieve glitter, cell is inhabited by coin
 update_coin(1):-
     write("glitter1 "),
     once(current(X,Y,_)),
     asserta(glitter(X,Y)).
+
 
 % update safe rooms
 update_safe():-
@@ -237,9 +242,40 @@ determine_wumpus(X,Y):-
     \+visited(X,Y),
     \+safe(X,Y),
 
+    % before marking a room as possible wumpus inhabited, check its adj rooms if there is a stench.
     (\+wumpus(X,Y) 
-        -> asserta(wumpus(X, Y))
+        -> check_wumpus_adj_rm_stench(wumpus(X, Y))
         ; true).
+
+% check if the adj rooms have stench
+check_wumpus_adj_rm_stench(X,Y):-
+    once(current(A, B, _)),
+    Z1 is Y + 1,
+    Z2 is Y - 1,
+    Z3 is X + 1,
+    Z4 is X - 1,
+
+    % DO NOT COMPARE WITH LATEST CURRENT POSITION!!!
+    % main room: room that is being considered to be marked with suspected wumpus.
+    % adj room: rooms adjacent to the main room
+
+    % if adj room not visited, and main room wumpus(X,Y) = false(avoid dups) -> mark main room with wumpus, continue comparison.
+    (( Z1 =/= B, \+visited(X, Z1), \+wumpus(X,Y)) -> asserta(wumpus(X, Y)) ; true),
+    (( Z2 =/= B, \+visited(X, Z2), \+wumpus(X,Y)) -> asserta(wumpus(X, Y)) ; true),
+    (( Z3 =/= A, \+visited(Z3, Y), \+wumpus(X,Y)) -> asserta(wumpus(X, Y)) ; true),
+    (( Z4 =/= A, \+visited(Z4, Y), \+wumpus(X,Y)) -> asserta(wumpus(X, Y)) ; true),
+
+    % if adj room is visited & no stench -> main room no wumpus(retract), stop comparison.
+    (( Z1 =/= B, visited(X, Z1), \+stench(x, Z1)) -> retract(wumpus(X,Y)), false ; true),
+    (( Z2 =/= B, visited(X, Z2), \+stench(x, Z2)) -> retract(wumpus(X,Y)), false ; true),
+    (( Z3 =/= A, visited(Z3, Y), \+stench(Z3, Y)) -> retract(wumpus(X,Y)), false ; true),
+    (( Z4 =/= A, visited(Z4, Y), \+stench(Z4, Y)) -> retract(wumpus(X,Y)), false ; true),
+
+    % if adj room is visited, has stench & main room wumpus(X,Y) = false(avoid dups) -> mark main room with wumpus, stop comparison.
+    (( Z1 =/= B, visited(X, Z1) , stench(x, Z1), \+wumpus(X,Y)) -> asserta(wumpus(X,Y)), false ; true),
+    (( Z2 =/= B,, visited(X, Z2) , stench(x, Z2), \+wumpus(X,Y)) -> asserta(wumpus(X,Y)), false ; true),
+    (( Z3 =/= A, visited(Z3, Y) , stench(Z3, Y), \+wumpus(X,Y)) -> asserta(wumpus(X,Y)), false ; true),
+    (( Z4 =/= A, visited(Z4, Y) , stench(Z4, Y), \+wumpus(X,Y)) -> asserta(wumpus(X,Y)), false ; true),
 
 determine_confoundus(X,Y):-
     % confoundus cannot be in a cell that has been visited or mark as safe 
@@ -250,6 +286,7 @@ determine_confoundus(X,Y):-
         -> asserta(confoundus(X, Y))
         ; true).
 
+
 determine_safe(X,Y):-
     %cell is safe if it there is no possible wumpus and confoundus and not visited
     \+visited(X,Y),
@@ -259,8 +296,6 @@ determine_safe(X,Y):-
     (\+safe(X,Y) 
         -> asserta(safe(X,Y))
         ; true).
-        
 
 
 %explore(L):-
-
