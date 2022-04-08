@@ -16,7 +16,7 @@ def main():
 
     #absolute map prinout 
     npc.printNPC()
-    map.printMap(agent.sensory)
+    #map.printMap(agent.sensory)
 
     #spawn the agent which will also query the prolog for knowledge, only confoundus is on at the start
     agent.spawnAgent()
@@ -35,6 +35,8 @@ def main():
             agent.move("shoot")
         elif(move=="p"):
             agent.move("pickup")
+        elif(move=="2"):
+            map.clearMap()
 
 
 if __name__== "__main__":

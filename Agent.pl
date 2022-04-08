@@ -8,6 +8,7 @@
     glitter/2,
     stench/2,
     safe/2,
+    wall/2,
     agent_loc/2,
     hasarrow/0,
     wumpus_alive/0,
@@ -26,6 +27,7 @@ reborn():-
     retractall(stench(_, _)),
     retractall(safe(_, _)),
     retractall(hasarrow()),
+    retractall(wall(_,_)),
 
     % when reborn, agent loses gold coin
     retractall(has_gold),
@@ -41,19 +43,19 @@ reborn():-
 
 
 reposition([Confounded, Stench, Tingle, _, _, _]):- 
+    write("repositioning "),
     retractall(current(_, _, _)),
     retractall(visited(_, _)),
+    retractall(wumpus(_, _)),
     retractall(confoundus(_, _)),
     retractall(tingle(_, _)),
     retractall(glitter(_, _)),
     retractall(stench(_, _)),
     retractall(safe(_, _)),
+    retractall(wall(_,_)),
 
     asserta(current(0,0,rnorth)),
     asserta(visited(0,0)),
-
-    %once(current(X, Y, _)),
-    %(Confounded == 1 -> (\+confoundus(X,Y) -> asserta(confoundus(X, Y))));
 
     update_portal(Confounded, indicator),
     update_wumpus(Stench),
@@ -99,9 +101,11 @@ update_bump(1):-
     false. 
 
 update_bump(X,Y):-
+    %there cannot be wumpus, confoundus and safe if experience bump infront
     (retract(wumpus(X,Y))->true; true),
     (retract(confoundus(X,Y))->true; true),
-    (retract(safe(X,Y))->true; true).
+    (retract(safe(X,Y))->true; true),
+    asserta(wall(X,Y)).
 
 update_action(turnleft):-
     write("turnleft "),

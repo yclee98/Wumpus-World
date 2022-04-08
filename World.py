@@ -31,23 +31,37 @@ class Map:
         lastrow = self.rows-1
         lastcolumn = self.columns-1
 
-        #populate the walls on the first and last row with #
-        for i in range(self.columns):
-            for k in range(self.innerCell):
-                self.map[0][i][k]="#"
-                self.map[lastrow][i][k]="#"
+        # #populate the walls on the first and last row with #
+        # for i in range(self.columns):
+        #     for k in range(self.innerCell):
+        #         self.map[0][i][k]="#"
+        #         self.map[lastrow][i][k]="#"
 
-        #populate the walls on the first and last columns with #
-        for i in range(self.rows):
-            for k in range(self.innerCell):
-                self.map[i][0][k]="#"
-                self.map[i][lastcolumn][k]="#"
+        # #populate the walls on the first and last columns with #
+        # for i in range(self.rows):
+        #     for k in range(self.innerCell):
+        #         self.map[i][0][k]="#"
+        #         self.map[i][lastcolumn][k]="#"
 
         #populate the cell 4 of the inner cell with ? 
         #to indicator, no agent, no known wumpus or portal or safe cell
-        for i in range(1, self.rows-1):
-            for j in range(1, self.columns-1):
+        for i in range(self.rows):
+            for j in range(self.columns):
                 self.map[i][j][4] = "?"
+
+    #clear the map of all symbols printout
+    def clearMap(self):
+        for i in range(self.rows):
+            for j in range(self.columns):
+                for k in range(self.innerCell):
+                    self.map[i][j][k] = "."
+        for i in range(self.rows):
+            for j in range(self.columns):
+                self.map[i][j][4] = "?"
+
+    def fillWall(self, x, y):
+        for k in range(self.innerCell):
+            self.map[y][x][k]="#"
 
     #initialize npc to map variable
     def setNpc(self, npc):
@@ -76,7 +90,7 @@ class Map:
         self.updateCellNpc(self.npc.portal[2][0], self.npc.portal[2][1])
     
     #perceive sensory at position x y
-    def perceiveSensory(self, agentPosition, bump, scream):
+    def perceiveSensory(self, agentPosition, bump=False, scream=False):
         #agentPosition in (x, y)
         #confounded, stench, tingle, glitter, bump, scream
         sensory = [0, 0, 0, 0, 0, 0] #intialize all sensory to off
@@ -286,16 +300,21 @@ class Agent:
         
         #bump and scream indicator are taken from the moveforward and shoot action then pass to percieveSensory to update the sensory list
         self.sensory = self.map.perceiveSensory((self.x, self.y), bump, scream)
-        
-        #call the move on the prolog side then query the knowledge of the agent to update the map
-        bool(list(prolog.query(f"move({action},{self.sensory})")))
-        self.queryAgentKnowledge()
-        self.map.printMap(self.sensory)
+
+        #when stepping into confoundus portal, relocate agent, clear the map, perceive new sensory and update agent
         if(self.sensory[0]==1):
             self.enterConfundusPortal()
-            
-
-    
+            self.map.clearMap()
+            self.sensory = self.map.perceiveSensory((self.x, self.y))
+            self.sensory[0] = 1 #mark confoundus indicator as on
+            bool(list(prolog.query(f"reposition({self.sensory})")))
+        else:
+            #call the move on the prolog side 
+            bool(list(prolog.query(f"move({action},{self.sensory})")))
+        #query the knowledge of the agent to update the map
+        self.queryAgentKnowledge()
+        self.map.printMap(self.sensory)
+        
     def queryAgentKnowledge(self):
         #get relative postion
         current = list(prolog.query("current(X,Y,D)"))[0]
@@ -303,18 +322,28 @@ class Agent:
         ry = current['Y']
         rd = current['D']
         print(f"agent relative {rx} {ry} {rd}")
+        print(f"agent absolute {self.x} {self.y} {self.orientation}")
 
         self.querySafeUnvisited(rx, ry)
-        self.queryPossibleConfoundus(rx, ry)
-        self.queryPossibleWumpus(rx, ry)
+        listOfConfoundus = self.queryPossibleConfoundus(rx, ry)
+        listOfWumpus = self.queryPossibleWumpus(rx, ry)
+        self.checkConfoundusWumpus(listOfConfoundus, listOfWumpus)
 
+        self.queryWall(rx, ry)
         self.qeurySensory(rx, ry)
         self.queryVisited(rx, ry, rd)
         self.updateAgentPosition(rd)
 
-    
+    #check for possible cell with both confoundus and wumpus then mark cell as U
+    def checkConfoundusWumpus(self, confoundus, wumpus):
+        containBoth = confoundus.intersection(wumpus)
+        for i in containBoth:
+            self.map.map[i[1]][i[0]][4] = 'U'
+
     def queryPossibleWumpus(self, rx, ry):
         #query agent for wumpus location and use offset to represent in map
+        #return a list of all confoundus location
+        listOfWumpus = set() 
         offsetX = self.x - rx
         offsetY = self.y - ry
         print("Possible wumpus: ", end=" ")
@@ -322,13 +351,17 @@ class Agent:
         for i in list(prolog.query("wumpus(X,Y)")):
             possibleX = i['X'] + offsetX
             possibleY = i['Y'] + offsetY
+            listOfWumpus.add((possibleX, possibleY))
             print(f"({possibleX}, {possibleY})", end = " ")
             if(possibleX > 0 and possibleX < 5 and possibleY > 0 and possibleY < 6):
                 self.map.map[possibleY][possibleX][4] = 'W'
         print()
+        return listOfWumpus
 
     def queryPossibleConfoundus(self, rx, ry):
         #query agent for confoundus location and use offset to represent in map
+        #return a set of all confoundus location
+        listOfConfoundus = set()
         offsetX = self.x - rx
         offsetY = self.y - ry
         print("Possible confoundus: ", end=" ")
@@ -336,10 +369,12 @@ class Agent:
         for i in list(prolog.query("confoundus(X,Y)")):
             possibleX = i['X'] + offsetX
             possibleY = i['Y'] + offsetY
+            listOfConfoundus.add((possibleX, possibleY))
             print(f"({possibleX}, {possibleY})", end = " ")
             if(possibleX > 0 and possibleX < 5 and possibleY > 0 and possibleY < 6):
                 self.map.map[possibleY][possibleX][4] = 'O'
         print()
+        return listOfConfoundus
     
     def querySafeUnvisited(self, rx, ry):
         #query agent for safe unvisited location and use offset to represent in map
@@ -369,6 +404,19 @@ class Agent:
                 self.map.map[possibleY][possibleX][3] = '.'
                 self.map.map[possibleY][possibleX][5] = '.'
                 self.map.map[possibleY][possibleX][4] = 'S'
+        print()
+    
+    def queryWall(self, rx, ry):
+        #query agent for wall location and use offset to represent in map
+        offsetX = self.x - rx
+        offsetY = self.y - ry
+        print("Possible wall: ", end=" ")
+        #valid game range for x is range 1 to 4; valid y is range 1 to 5
+        for i in list(prolog.query("wall(X,Y)")):
+            possibleX = i['X'] + offsetX
+            possibleY = i['Y'] + offsetY
+            print(f"({possibleX}, {possibleY})", end = " ")
+            self.map.fillWall(possibleX, possibleY)
         print()
 
         
@@ -415,7 +463,7 @@ class Agent:
 
     def enterConfundusPortal(self):
         print("standing on portal")
-        self.map.map[self.y][self.x][4] = 'O'
+        #self.map.map[self.y][self.x][4] = 'O'
         listofNPC = set() # get list of npcs
         typeWumpus = type(self.map.npc.wumpus) is tuple # checking if there is more than 1 wumpus
         typeCoin = type(self.map.npc.coin) is tuple # checking if there is more than 1 coin
@@ -441,14 +489,15 @@ class Agent:
             newY=random.randint(1,self.map.rows-2)
             #print("this is new x", newX)
             #print("this is new Y", newY)
-            newPosition = (newY,newX)
+            newPosition = (newX,newY)
             if newPosition not in listofNPC:
                 flag = True
                 print("this is new position", newPosition)
                 self.x=newX
                 self.y=newY
-                self.updateAgentPosition('rnorth')
-                self.map.printMap(self.sensory)
-
+                self.orientation="north"
+                #self.updateAgentPosition('rnorth')
+                #self.map.printMap(self.sensory)
         # reflect on the map
+
 
