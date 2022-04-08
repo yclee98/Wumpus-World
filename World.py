@@ -353,8 +353,8 @@ class Agent:
             possibleY = i['Y'] + offsetY
             listOfWumpus.add((possibleX, possibleY))
             print(f"({possibleX}, {possibleY})", end = " ")
-            if(possibleX > 0 and possibleX < 5 and possibleY > 0 and possibleY < 6):
-                self.map.map[possibleY][possibleX][4] = 'W'
+            #if(possibleX > 0 and possibleX < 5 and possibleY > 0 and possibleY < 6):
+            self.map.map[possibleY][possibleX][4] = 'W'
         print()
         return listOfWumpus
 
@@ -371,8 +371,8 @@ class Agent:
             possibleY = i['Y'] + offsetY
             listOfConfoundus.add((possibleX, possibleY))
             print(f"({possibleX}, {possibleY})", end = " ")
-            if(possibleX > 0 and possibleX < 5 and possibleY > 0 and possibleY < 6):
-                self.map.map[possibleY][possibleX][4] = 'O'
+            #if(possibleX > 0 and possibleX < 5 and possibleY > 0 and possibleY < 6):
+            self.map.map[possibleY][possibleX][4] = 'O'
         print()
         return listOfConfoundus
     
@@ -386,8 +386,8 @@ class Agent:
             possibleX = i['X'] + offsetX
             possibleY = i['Y'] + offsetY
             print(f"({possibleX}, {possibleY})", end = " ")
-            if(possibleX > 0 and possibleX < 5 and possibleY > 0 and possibleY < 6):
-                self.map.map[possibleY][possibleX][4] = 's'
+            # if(possibleX > 0 and possibleX < 5 and possibleY > 0 and possibleY < 6):
+            self.map.map[possibleY][possibleX][4] = 's'
         print()
 
     def queryVisited(self, rx, ry, rd):
@@ -400,10 +400,10 @@ class Agent:
             possibleX = i['X'] + offsetX
             possibleY = i['Y'] + offsetY
             print(f"({possibleX}, {possibleY})", end = " ")
-            if(possibleX > 0 and possibleX < 5 and possibleY > 0 and possibleY < 6):
-                self.map.map[possibleY][possibleX][3] = '.'
-                self.map.map[possibleY][possibleX][5] = '.'
-                self.map.map[possibleY][possibleX][4] = 'S'
+            # if(possibleX > 0 and possibleX < 5 and possibleY > 0 and possibleY < 6):
+            self.map.map[possibleY][possibleX][3] = '.'
+            self.map.map[possibleY][possibleX][5] = '.'
+            self.map.map[possibleY][possibleX][4] = 'S'
         print()
     
     def queryWall(self, rx, ry):
