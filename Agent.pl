@@ -275,7 +275,7 @@ check_wumpus_adj_rm_stench(X,Y):-
     (( Z1 =/= B, visited(X, Z1) , stench(x, Z1), \+wumpus(X,Y)) -> asserta(wumpus(X,Y)), false ; true),
     (( Z2 =/= B,, visited(X, Z2) , stench(x, Z2), \+wumpus(X,Y)) -> asserta(wumpus(X,Y)), false ; true),
     (( Z3 =/= A, visited(Z3, Y) , stench(Z3, Y), \+wumpus(X,Y)) -> asserta(wumpus(X,Y)), false ; true),
-    (( Z4 =/= A, visited(Z4, Y) , stench(Z4, Y), \+wumpus(X,Y)) -> asserta(wumpus(X,Y)), false ; true),
+    (( Z4 =/= A, visited(Z4, Y) , stench(Z4, Y), \+wumpus(X,Y)) -> asserta(wumpus(X,Y)), false ; true).
 
 determine_confoundus(X,Y):-
     % confoundus cannot be in a cell that has been visited or mark as safe 
