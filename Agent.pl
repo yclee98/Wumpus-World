@@ -35,6 +35,7 @@ reborn():-
     asserta(agent_alive),
     asserta(has_gold),
     asserta(hasarrow),
+    asserta(initial_stench),
     asserta(current(0, 0, rnorth)),
     asserta(visited(0,0)).
 
@@ -192,7 +193,7 @@ update_portal(1):-
     Z1 is Y + 1, (determine_confoundus(X, Z1) ->true; true),
     Z2 is Y - 1, (determine_confoundus(X, Z2) ->true; true),
     Z3 is X + 1, (determine_confoundus(Z3, Y) ->true; true),
-    Z4 is X - 1, (determine_confoundus(Z4, Y) ->true; true),
+    Z4 is X - 1, (determine_confoundus(Z4, Y) ->true; true).
 
 
 % to update confoundus indicator
@@ -243,13 +244,12 @@ determine_wumpus(X,Y):-
     \+safe(X,Y),
 
     % before marking a room as possible wumpus inhabited, check its adj rooms if there is a stench.
-    (\+wumpus(X,Y) 
-        -> check_wumpus_adj_rm_stench(wumpus(X, Y), true)
-        ; true).
+    (\+wumpus(X,Y) -> check_wumpus_adj_rm_stench(X, Y), retract(initial_stench), true ; true).
 
 % check if the adj rooms have stench
 check_wumpus_adj_rm_stench(X,Y):-
     once(current(A, B, _)),
+
     Z1 is Y + 1,
     Z2 is Y - 1,
     Z3 is X + 1,
@@ -260,10 +260,10 @@ check_wumpus_adj_rm_stench(X,Y):-
     % adj room: rooms adjacent to the main room
 
     % if adj room not visited, and main room wumpus(X,Y) = false(avoid dups) -> mark main room with wumpus, continue comparison.
-    (( Z1 =\= B, \+visited(X, Z1), \+wumpus(X,Y)) -> asserta(wumpus(X, Y)) ; true),
-    (( Z2 =\= B, \+visited(X, Z2), \+wumpus(X,Y)) -> asserta(wumpus(X, Y)) ; true),
-    (( Z3 =\= A, \+visited(Z3, Y), \+wumpus(X,Y)) -> asserta(wumpus(X, Y)) ; true),
-    (( Z4 =\= A, \+visited(Z4, Y), \+wumpus(X,Y)) -> asserta(wumpus(X, Y)) ; true),
+    (( Z1 =\= B, \+visited(X, Z1), \+wumpus(X,Y), initial_stench) -> asserta(wumpus(X, Y)) ; true),
+    (( Z2 =\= B, \+visited(X, Z2), \+wumpus(X,Y), initial_stench) -> asserta(wumpus(X, Y)) ; true),
+    (( Z3 =\= A, \+visited(Z3, Y), \+wumpus(X,Y), initial_stench) -> asserta(wumpus(X, Y)) ; true),
+    (( Z4 =\= A, \+visited(Z4, Y), \+wumpus(X,Y), initial_stench) -> asserta(wumpus(X, Y)) ; true),
 
     % if adj room is visited & no stench -> main room no wumpus(retract), stop comparison.
     (( Z1 =\= B, visited(X, Z1), \+stench(x, Z1)) -> retract(wumpus(X,Y)), false ; true),
