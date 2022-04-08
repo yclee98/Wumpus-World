@@ -51,14 +51,14 @@ reposition([Confounded, Stench, Tingle, _, _, _]):-
     asserta(current(0,0,rnorth)),
     asserta(visited(0,0)),
 
-    once(current(X, Y, _)),
-    (Confounded == 1 -> (\+confoundus(X,Y) -> asserta(confoundus(X, Y))));
+    %once(current(X, Y, _)),
+    %(Confounded == 1 -> (\+confoundus(X,Y) -> asserta(confoundus(X, Y))));
 
+    update_portal(Confounded, indicator),
     update_wumpus(Stench),
     update_portal(Tingle),
     update_safe().
     
-
 
 % A = Forward, TurnLeft, TurnRight
 % D = rnorth, rsouth, reast, rwest
@@ -66,11 +66,9 @@ reposition([Confounded, Stench, Tingle, _, _, _]):-
 % 1 = on, 0 = off
 % sensory is received after making the move on the python side so need to update_action first before responsing to the sensory
 move(A, [Confounded, Stench, Tingle, Glitter, Bump, Scream]):-
-    %if bump occur dont do an action   
-    (Bump \= 1 -> 
-        update_action(A); 
-        update_bump(); true
-    ),
+    update_bump(Bump), %if there is a bump then will not run the code below
+
+    update_action(A), %for turnleft, turnright there is no need to run code below so they will return false 
 
     update_portal(Confounded, indicator), %update the confounded indicator    
     update_wumpus(Stench),
@@ -78,9 +76,13 @@ move(A, [Confounded, Stench, Tingle, Glitter, Bump, Scream]):-
     update_coin(Glitter),
     update_safe(). 
 
+update_bump(0):- write("bump0 "),true.
+
 %assert current position to be the same to indicate a bump resulting in being same room
 %remove the room from safe as it is not accessible
-update_bump():-
+%return false when there is bump
+update_bump(1):-
+    write("bump1 "),
     once(current(X, Y, D)),
     asserta(current(X,Y,D)),
 
@@ -88,11 +90,17 @@ update_bump():-
     Z2 is Y - 1, 
     Z3 is X + 1, 
     Z4 is X - 1, 
-    (D == rnorth -> retract(safe(X, Z1));
-     D == rsouth -> retract(safe(X, Z2));
-     D == reast -> retract(safe(Z3, Y));
-     D == rwest -> retract(safe(Z4, Y))).
+    (D == rnorth -> update_bump(X, Z1);
+     D == rsouth -> update_bump(X, Z2);
+     D == reast -> update_bump(Z3, Y);
+     D == rwest -> update_bump(Z4, Y)),
 
+    false. 
+
+update_bump(X,Y):-
+    (retract(wumpus(X,Y))->true; true),
+    (retract(confoundus(X,Y))->true; true),
+    (retract(safe(X,Y))->true; true).
 
 update_action(turnleft):-
     write("turnleft "),
@@ -100,7 +108,8 @@ update_action(turnleft):-
     (D == rnorth -> asserta(current(X, Y, rwest));
      D == rsouth -> asserta(current(X, Y, reast));
      D == reast -> asserta(current(X, Y, rnorth));
-     D == rwest -> asserta(current(X, Y, rsouth))).
+     D == rwest -> asserta(current(X, Y, rsouth))),
+    false.
 
 
 update_action(turnright):-
@@ -109,7 +118,8 @@ update_action(turnright):-
     (D == rnorth -> asserta(current(X, Y, reast));
      D == rsouth -> asserta(current(X, Y, rwest));
      D == reast -> asserta(current(X, Y, rsouth));
-     D == rwest -> asserta(current(X, Y, rnorth))).
+     D == rwest -> asserta(current(X, Y, rnorth))),
+    false.
 
 
 update_action(moveforward):-
@@ -186,14 +196,25 @@ update_portal(1):-
 
 % to update confoundus indicator
 update_portal(0, indicator):-
+    write("confoundus0 "),
     true.
 
 update_portal(1, indicator):-
-    write("update portal indicator "),
+    write("confoundus1 "),
     once(current(X,Y,_)),
     (\+confoundus(X,Y) 
         -> asserta(confoundus(X, Y))
         ; true).
+
+update_coin(0):-
+    write("glitter0 "),
+    true.
+
+% if percieve glitter, cell is inhabited by coin
+update_coin(1):-
+    write("glitter1 "),
+    once(current(X,Y,_)),
+    asserta(glitter(X,Y)).
 
 % update safe rooms
 update_safe():-
@@ -204,54 +225,42 @@ update_safe():-
     Z2 is Y - 1, (determine_safe(X, Z2) ->true; true),
     Z3 is X + 1, (determine_safe(Z3, Y) ->true; true),
     Z4 is X - 1, (determine_safe(Z4, Y) ->true; true).
-
-
-update_coin(0):-
-    true.
-
-% if percieve glitter, cell is inhabited by coin
-update_coin(1):-
-    write("glitter1 "),
-    once(current(X,Y,_)),
-    asserta(glitter(X,Y)),
-    true.
-
+    
 
 % find overlapping wumpus(X,Y) rooms in KB (previously existed), wumpus may be in those overlapping rooms
 determine_wumpus(X,Y):-
-    write("determine wumpus "),
     % SYNTAX: (cond -> if-func ; else-func), \+ : Negation
     % if: there is prev wumpus(X,Y) entry with the exact same coords, More likely wumpus is in that room(s) -> already recorded
     % else: if there is no prior entry, add the new entry
 
-    % wumpus cannot be in a cell that has been visited
+    % wumpus cannot be in a cell that has been visited or mark as safe
     \+visited(X,Y),
+    \+safe(X,Y),
 
-    % if the cell not yet visited then ppossible wumpus
     (\+wumpus(X,Y) 
         -> asserta(wumpus(X, Y))
         ; true).
 
 determine_confoundus(X,Y):-
-    write("determine confoundus "),
-
-    % confoundus cannot be in a cell that has been visited
+    % confoundus cannot be in a cell that has been visited or mark as safe 
     \+visited(X,Y),
+    \+safe(X,Y),
 
-    % if the cell not yet visited then ppossible confoundus
     (\+confoundus(X,Y) 
         -> asserta(confoundus(X, Y))
         ; true).
 
 determine_safe(X,Y):-
-    write("determine safe "),
-    %cell is safe if it there is no possible wumpus or confoundus and not visited
+    %cell is safe if it there is no possible wumpus and confoundus and not visited
     \+visited(X,Y),
     \+wumpus(X,Y),
     \+confoundus(X,Y),
+
     (\+safe(X,Y) 
         -> asserta(safe(X,Y))
         ; true).
+        
+
 
 %explore(L):-
 
