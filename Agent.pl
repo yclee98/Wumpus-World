@@ -260,22 +260,22 @@ check_wumpus_adj_rm_stench(X,Y):-
     % adj room: rooms adjacent to the main room
 
     % if adj room not visited, and main room wumpus(X,Y) = false(avoid dups) -> mark main room with wumpus, continue comparison.
-    (( Z1 =/= B, \+visited(X, Z1), \+wumpus(X,Y)) -> asserta(wumpus(X, Y)) ; true),
-    (( Z2 =/= B, \+visited(X, Z2), \+wumpus(X,Y)) -> asserta(wumpus(X, Y)) ; true),
-    (( Z3 =/= A, \+visited(Z3, Y), \+wumpus(X,Y)) -> asserta(wumpus(X, Y)) ; true),
-    (( Z4 =/= A, \+visited(Z4, Y), \+wumpus(X,Y)) -> asserta(wumpus(X, Y)) ; true),
+    (( Z1 =\= B, \+visited(X, Z1), \+wumpus(X,Y)) -> asserta(wumpus(X, Y)) ; true),
+    (( Z2 =\= B, \+visited(X, Z2), \+wumpus(X,Y)) -> asserta(wumpus(X, Y)) ; true),
+    (( Z3 =\= A, \+visited(Z3, Y), \+wumpus(X,Y)) -> asserta(wumpus(X, Y)) ; true),
+    (( Z4 =\= A, \+visited(Z4, Y), \+wumpus(X,Y)) -> asserta(wumpus(X, Y)) ; true),
 
     % if adj room is visited & no stench -> main room no wumpus(retract), stop comparison.
-    (( Z1 =/= B, visited(X, Z1), \+stench(x, Z1)) -> retract(wumpus(X,Y)), false ; true),
-    (( Z2 =/= B, visited(X, Z2), \+stench(x, Z2)) -> retract(wumpus(X,Y)), false ; true),
-    (( Z3 =/= A, visited(Z3, Y), \+stench(Z3, Y)) -> retract(wumpus(X,Y)), false ; true),
-    (( Z4 =/= A, visited(Z4, Y), \+stench(Z4, Y)) -> retract(wumpus(X,Y)), false ; true),
+    (( Z1 =\= B, visited(X, Z1), \+stench(x, Z1)) -> retract(wumpus(X,Y)), false ; true),
+    (( Z2 =\= B, visited(X, Z2), \+stench(x, Z2)) -> retract(wumpus(X,Y)), false ; true),
+    (( Z3 =\= A, visited(Z3, Y), \+stench(Z3, Y)) -> retract(wumpus(X,Y)), false ; true),
+    (( Z4 =\= A, visited(Z4, Y), \+stench(Z4, Y)) -> retract(wumpus(X,Y)), false ; true),
 
     % if adj room is visited, has stench & main room wumpus(X,Y) = false(avoid dups) -> mark main room with wumpus, stop comparison.
-    (( Z1 =/= B, visited(X, Z1), stench(x, Z1), \+wumpus(X,Y)) -> asserta(wumpus(X,Y)), false ; true),
-    (( Z2 =/= B, visited(X, Z2), stench(x, Z2), \+wumpus(X,Y)) -> asserta(wumpus(X,Y)), false ; true),
-    (( Z3 =/= A, visited(Z3, Y), stench(Z3, Y), \+wumpus(X,Y)) -> asserta(wumpus(X,Y)), false ; true),
-    (( Z4 =/= A, visited(Z4, Y), stench(Z4, Y), \+wumpus(X,Y)) -> asserta(wumpus(X,Y)), false ; true).
+    (( Z1 =\= B, visited(X, Z1), stench(x, Z1), \+wumpus(X,Y)) -> asserta(wumpus(X,Y)), false ; true),
+    (( Z2 =\= B, visited(X, Z2), stench(x, Z2), \+wumpus(X,Y)) -> asserta(wumpus(X,Y)), false ; true),
+    (( Z3 =\= A, visited(Z3, Y), stench(Z3, Y), \+wumpus(X,Y)) -> asserta(wumpus(X,Y)), false ; true),
+    (( Z4 =\= A, visited(Z4, Y), stench(Z4, Y), \+wumpus(X,Y)) -> asserta(wumpus(X,Y)), false ; true).
 
 determine_confoundus(X,Y):-
     % confoundus cannot be in a cell that has been visited or mark as safe 
