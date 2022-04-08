@@ -112,6 +112,7 @@ class Map:
             sensory[2] = 1
         
         return sensory
+        
 
     #print the map
     def printMap(self, sensory):
@@ -290,6 +291,9 @@ class Agent:
         bool(list(prolog.query(f"move({action},{self.sensory})")))
         self.queryAgentKnowledge()
         self.map.printMap(self.sensory)
+        if(self.sensory[0]==1):
+            self.enterConfundusPortal()
+            
 
     
     def queryAgentKnowledge(self):
@@ -408,4 +412,43 @@ class Agent:
             pass
 
         #update scream
+
+    def enterConfundusPortal(self):
+        print("standing on portal")
+        self.map.map[self.y][self.x][4] = 'O'
+        listofNPC = set() # get list of npcs
+        typeWumpus = type(self.map.npc.wumpus) is tuple # checking if there is more than 1 wumpus
+        typeCoin = type(self.map.npc.coin) is tuple # checking if there is more than 1 coin
+        if (typeWumpus == False):
+            for i in range(len(self.map.npc.wumpus)):
+                    listofNPC.add(self.map.npc.wumpus[i])
+        else:
+            listofNPC.add(self.map.npc.wumpus)
+        for i in range(len(self.map.npc.portal)):
+                listofNPC.add(self.map.npc.portal[i])
+        if (typeCoin == False):
+            for i in range(len(self.map.npc.coin)):
+                    listofNPC.add(self.map.npc.coin[i])
+        else:
+            listofNPC.add(self.map.npc.coin)
+        #print("this is listofNPC", listofNPC) # end of getting list of NPCs
+        # random while not in the list, set as new location
+        #print("this is columns", self.columns)
+        #print("this is rows", self.rows)
+        flag = False
+        while (flag==False):
+            newX = random.randint(1,self.map.columns-2)
+            newY=random.randint(1,self.map.rows-2)
+            #print("this is new x", newX)
+            #print("this is new Y", newY)
+            newPosition = (newY,newX)
+            if newPosition not in listofNPC:
+                flag = True
+                print("this is new position", newPosition)
+                self.x=newX
+                self.y=newY
+                self.updateAgentPosition('rnorth')
+                self.map.printMap(self.sensory)
+
+        # reflect on the map
 
