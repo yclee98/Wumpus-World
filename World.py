@@ -311,7 +311,15 @@ class Agent:
         else:
             #call the move on the prolog side 
             bool(list(prolog.query(f"move({action},{self.sensory})")))
-        #query the knowledge of the agent to update the map
+        #query the knowledge of the agent to update the map 
+        if(self.enterWumpus() == True): #check if enter same cell as wumpus
+            print("entered wumpus cell, gameover")
+            self.x=1
+            self.y=1
+            self.orientation="north"
+            self.map.clearMap()
+            self.sensory = self.map.perceiveSensory((self.x, self.y))   
+            bool(list(prolog.query(f"reposition({self.sensory})")))
         self.queryAgentKnowledge()
         self.map.printMap(self.sensory)
         
@@ -499,5 +507,21 @@ class Agent:
                 #self.updateAgentPosition('rnorth')
                 #self.map.printMap(self.sensory)
         # reflect on the map
+
+    def enterWumpus(self):
+        listofWumpus = set()
+        typeWumpus = type(self.map.npc.wumpus) is tuple
+        if (typeWumpus == False):
+            for i in range(len(self.map.npc.wumpus)):
+                    listofWumpus.add(self.map.npc.wumpus[i])
+        else:
+            listofWumpus.add(self.map.npc.wumpus)
+        currentPosition = (self.x,self.y)
+        if currentPosition in listofWumpus:
+            return True
+        else:
+            return False
+
+
 
 
