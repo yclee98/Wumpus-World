@@ -14,7 +14,12 @@
     wumpus_alive/0,
     agent_alive/0,
     has_gold/0,
-    initial_stench/0.
+    initial_stench/0,
+
+    %explore path
+    path/2,
+    visitedPath/2,
+    pathCompleted/1.
 
 
 reborn():-
@@ -80,11 +85,6 @@ move(A, [Confounded, Stench, Tingle, Glitter, Bump, Scream]):-
     update_scream(Scream),
     update_safe().
 
-update_wumpus_scream(1):-
-    retractall(wumpus(_,_) true ; true).
-
-update_wumpus_scream(0):-
-    true.
 
 update_bump(0):- write("bump0 "),true.
 
@@ -383,3 +383,79 @@ determine_safe(X,Y):-
 
 %goto(X,Y,L):-
 %    once(A,B,D),
+
+%test out plan path
+test_plan_path():-
+    retractall(visited(_,_)),
+
+    asserta(visited(1,1)),
+    asserta(visited(1,3)),
+
+    asserta(visited(2,1)),
+    asserta(visited(2,2)),
+    asserta(visited(2,3)),
+    asserta(visited(2,4)),
+
+    asserta(visited(3,1)),
+    %asserta(visited(3,3)),
+    
+    asserta(visited(4,1)),
+    asserta(visited(4,2)),
+
+    %plan a path to a unvisited room
+    plan_path(4,2, 3,4).
+
+
+%plan a path from xy to Xd yd (safe location)
+%path store in path(X,Y)
+plan_path(X, Y, Xd, Yd):-
+    %as we use visited to get a list of connected path need the destination location to be inside
+    %as safe room is not inside visited, put it in visited and remove at the end of search
+    (\+visited(Xd,Yd) -> asserta(visited(Xd,Yd)); true),
+
+    retractall(path(_,_)), %to keep track the path from start to destination
+    retractall(pathVisited(_,_)), %to keep track all visited path from this search
+    retractall(pathCompleted(_)), %to stop searching when a path is found
+
+    asserta(pathVisited(X, Y)),
+    find_path(X,Y,Xd,Yd),
+
+    retract(visited(Xd, Yd)).
+
+%when x y == xd yd mean a path is found
+find_path(X, Y, Xd, Yd):-
+    (X =:= Xd, Y =:= Yd),
+    write("Path found"),
+    asserta(pathCompleted(1)),
+    !.
+
+% recursively search for a room that is adjacent and visited by agent 
+find_path(X, Y, Xd, Yd):-
+    \+pathCompleted(1),
+
+    %get next room from visited which is adjacent and not yet visited by this path search 
+    visited(XV, YV), 
+    \+pathVisited(XV,YV),
+    is_adjacent(X, Y, XV, YV),
+
+    \+pathCompleted(1),
+    
+    write("path "), write(XV) , write(" ") ,  write(YV), nl,
+    (\+pathVisited(XV,YV) -> assertz(pathVisited(XV,YV)); true),
+    (\+path(XV,YV) -> assertz(path(XV,YV)); true),
+    
+    %find a path from the visited room taken from visited to destination 
+    find_path(XV, YV, Xd, Yd).
+
+%when there is no path ahead, retract this path
+find_path(X,Y,_,_):-
+    \+pathCompleted(1),
+    retract(path(X,Y)).
+
+
+% check if x y is adjacent to xt yt
+is_adjacent(X,Y,Xd,Yd) :-
+    ((X =:= Xd, Y =:= Yd+1);
+    (X =:= Xd, Y =:= Yd-1);
+    (X =:= Xd+1, Y =:= Yd);
+    (X =:= Xd-1, Y =:= Yd)), !.
