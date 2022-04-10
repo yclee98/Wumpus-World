@@ -319,6 +319,7 @@ class Agent:
             self.orientation="north"
             self.map.clearMap()
             self.sensory = self.map.perceiveSensory((self.x, self.y))   
+            bool(list(prolog.query("reborn()")))
             bool(list(prolog.query(f"reposition({self.sensory})")))
         self.queryAgentKnowledge()
         self.map.printMap(self.sensory)
@@ -473,15 +474,19 @@ class Agent:
         print("standing on portal")
         #self.map.map[self.y][self.x][4] = 'O'
         listofNPC = set() # get list of npcs
-        typeWumpus = type(self.map.npc.wumpus) is tuple # checking if there is more than 1 wumpus
+        #typeWumpus = type(self.map.npc.wumpus) is tuple # checking if there is more than 1 wumpus
         typeCoin = type(self.map.npc.coin) is tuple # checking if there is more than 1 coin
-        if (typeWumpus == False):
-            for i in range(len(self.map.npc.wumpus)):
-                    listofNPC.add(self.map.npc.wumpus[i])
-        else:
+        # if (typeWumpus == False):
+        #     for i in range(len(self.map.npc.wumpus)):
+        #             listofNPC.add(self.map.npc.wumpus[i])
+        # else:
+
+        if(self.map.npc.wumpus!=None):
             listofNPC.add(self.map.npc.wumpus)
+
         for i in range(len(self.map.npc.portal)):
                 listofNPC.add(self.map.npc.portal[i])
+
         if (typeCoin == False):
             for i in range(len(self.map.npc.coin)):
                     listofNPC.add(self.map.npc.coin[i])
@@ -509,18 +514,24 @@ class Agent:
         # reflect on the map
 
     def enterWumpus(self):
-        listofWumpus = set()
-        typeWumpus = type(self.map.npc.wumpus) is tuple
-        if (typeWumpus == False):
-            for i in range(len(self.map.npc.wumpus)):
-                    listofWumpus.add(self.map.npc.wumpus[i])
-        else:
-            listofWumpus.add(self.map.npc.wumpus)
-        currentPosition = (self.x,self.y)
-        if currentPosition in listofWumpus:
+        if(self.map.npc.wumpus == None): return False
+
+        if((self.x, self.y) == self.map.npc.wumpus):
             return True
         else:
             return False
+        # listofWumpus = set()
+        # typeWumpus = type(self.map.npc.wumpus) is tuple
+        # if (typeWumpus == False):
+        #     for i in range(len(self.map.npc.wumpus)):
+        #             listofWumpus.add(self.map.npc.wumpus[i])
+        # else:
+        #     listofWumpus.add(self.map.npc.wumpus)
+        # currentPosition = (self.x,self.y)
+        # if currentPosition in listofWumpus:
+        #     return True
+        # else:
+        #     return False
 
 
 
