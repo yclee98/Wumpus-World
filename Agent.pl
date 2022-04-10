@@ -77,6 +77,7 @@ move(A, [Confounded, Stench, Tingle, Glitter, Bump, Scream]):-
     update_wumpus(Stench),
     update_portal(Tingle),
     update_coin(Glitter),
+    update_scream(Scream),
     update_safe(). 
 
 update_bump(0):- write("bump0 "),true.
@@ -151,6 +152,16 @@ update_action(moveforward):-
     (retract(confoundus(X1,Y1))->true; true),
     (retract(safe(X1,Y1))->true; true).
 
+update_action(shoot):-
+    write("shoot "),
+    %once(current(X, Y, D)),
+    %asserta(current(X,Y,D)),
+    retractall(hasarrow()).
+
+update_action(pickup):-
+    write("pickup "),
+    retractall(has_gold),
+    retractall(glitter(_,_)).
 
 update_wumpus(0):-
     write("stench0 "),
@@ -213,6 +224,14 @@ update_portal(1, indicator):-
         -> asserta(confoundus(X, Y))
         ; true).
 
+update_scream(0):-
+    write("scream0 "),
+    true.
+
+update_scream(1):-
+    write("scream1 "),
+    retractall(wumpus_alive()),
+    retractall(wumpus(_,_)).
 
 update_coin(0):-
     write("glitter0 "),

@@ -73,12 +73,6 @@ class Map:
         self.map[npcY][npcX][3] = "—"
         self.map[npcY][npcX][5] = "—"
     
-    #update cell after killing wumpus, remove wumpus from the cell
-    def updateCellKillWumpus(self, npcX, npcY):
-        #wumpus died, print . at that cell instead 
-        self.map[npcY][npcX][3] = "."
-        self.map[npcY][npcX][5] = "."
-    
     #show the npc on the map;
     def spawnNPConMap(self):
         if(self.npc.wumpus!=None):
@@ -269,21 +263,20 @@ class Agent:
         #identify the ahead cell
         if(self.orientation=='north'): aheadY = aheadY + 1
         elif(self.orientation=='east'): aheadX = aheadX + 1
-        elif(self.orientation=='south'): aheadY = aheadX - 1
+        elif(self.orientation=='south'): aheadY = aheadY - 1
         elif(self.orientation=='west'): aheadX = aheadX - 1
 
-        #check if wumpus ahead to shoot
-        if((aheadX, aheadY) == self.map.npc.wumpus):
-            scream = True 
-            self.map.npc.wumpus = None #remove wumpus from npc
-            # for i in list(prolog.query("wumpus(X,Y)")):
-            #     prolog.asserta('safe(' + str(i['X']) + ',' + str(i['Y']) + ')')
-            #     self.map.map[i['Y']][i['X']][4] = 's'
-            # prolog.retractall('wumpus(_,_)')
-            #self.map.updateCellKillWumpus(aheadX, aheadY) #location of wumpus is at aheadX and aheadY, need to remove from cell
-            print("Wumpus killed")
+        #check if there is arrow to shoot 
+        if(bool(list(prolog.query("hasarrow")))):
+            #check if wumpus ahead to shoot
+            if((aheadX, aheadY) == self.map.npc.wumpus):
+                scream = True 
+                self.map.npc.wumpus = None #remove wumpus from npc
+                print("Wumpus killed")
+            else:
+                print("Failed to kill wumpus")
         else:
-            print("Failed to kill wumpus")
+            print("no arrow to shoot")
 
         return scream
 
@@ -315,6 +308,7 @@ class Agent:
         else:
             #call the move on the prolog side 
             bool(list(prolog.query(f"move({action},{self.sensory})")))
+
         #query the knowledge of the agent to update the map 
         if(self.enterWumpus() == True): #check if enter same cell as wumpus
             print("entered wumpus cell, gameover")
@@ -327,7 +321,8 @@ class Agent:
             bool(list(prolog.query(f"reposition({self.sensory})")))
         self.queryAgentKnowledge()
         self.map.printMap(self.sensory)
-        
+
+
     def queryAgentKnowledge(self):
         #get relative postion
         current = list(prolog.query("current(X,Y,D)"))[0]
@@ -452,12 +447,20 @@ class Agent:
         #query the sensory information
         if bool(list(prolog.query(f"confoundus({rx},{ry})"))):
             self.map.map[self.y][self.x][0] = '%'
+        else:
+            self.map.map[self.y][self.x][0] = '.'
         if bool(list(prolog.query(f"stench({rx},{ry})"))):
             self.map.map[self.y][self.x][1] = '='
+        else:
+            self.map.map[self.y][self.x][1] = '.'
         if bool(list(prolog.query(f"tingle({rx},{ry})"))):
             self.map.map[self.y][self.x][2] = 'T'
+        else:
+            self.map.map[self.y][self.x][2] = '.'
         if bool(list(prolog.query(f"glitter({rx},{ry})"))):
             self.map.map[self.y][self.x][6] = '*'
+        else:
+            self.map.map[self.y][self.x][6] = '.'
 
         #update bump
         #query if the first and second current is the same it means it did not move so a bump
@@ -473,6 +476,19 @@ class Agent:
             pass
 
         #update scream
+        try:
+            # newPosition = list(prolog.query("current(X,Y,D)"))[0]
+            # previousPosition = list(prolog.query("current(X,Y,D)"))[1]
+            wumpus_count = len(list(prolog.query("wumpus(X,Y)")))
+            # newPosition == previousPosition and 
+            hasarrow = bool(list(prolog.query("hasarrow")))
+            if(hasarrow == False and wumpus_count==0):  
+                self.map.map[self.y][self.x][8] = '@'
+            else:
+                self.map.map[self.y][self.x][7] = '.'
+        except IndexError:
+            #no previous position; at the start of the game 
+            pass
 
     def enterConfundusPortal(self):
         print("standing on portal")
