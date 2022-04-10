@@ -34,6 +34,7 @@ reborn():-
 
     % Set wumpus back alive
     asserta(wumpus_alive),
+    asserta(initial_stench),
     asserta(agent_alive),
     asserta(has_gold),
     asserta(hasarrow),
@@ -71,14 +72,19 @@ reposition([Confounded, Stench, Tingle, _, _, _]):-
 move(A, [Confounded, Stench, Tingle, Glitter, Bump, Scream]):-
     update_bump(Bump), %if there is a bump then will not run the code below
 
-    update_action(A), %for turnleft, turnright there is no need to run code below so they will return false 
-
+    update_action(A), %for turnleft, turnright there is no need to run code below so they will return false
     update_portal(Confounded, indicator), %update the confounded indicator    
     update_wumpus(Stench),
     update_portal(Tingle),
     update_coin(Glitter),
     update_scream(Scream),
-    update_safe(). 
+    update_safe().
+
+update_wumpus_scream(1):-
+    retractall(wumpus(_,_) true ; true).
+
+update_wumpus_scream(0):-
+    true.
 
 update_bump(0):- write("bump0 "),true.
 

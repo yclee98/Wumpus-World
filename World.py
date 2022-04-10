@@ -72,7 +72,7 @@ class Map:
         #update cell 3 and 5 with "—" 
         self.map[npcY][npcX][3] = "—"
         self.map[npcY][npcX][5] = "—"
-    
+
     #show the npc on the map;
     def spawnNPConMap(self):
         if(self.npc.wumpus!=None):
@@ -198,6 +198,7 @@ class Agent:
         #0 for off, 1 for on
         #confounded on at start of the game 
         self.sensory = [1,0,0,0,0,0]
+        self.initial_scream_heard = 1
 
     def spawnAgent(self):
         bool(list(prolog.query("reborn()")))
@@ -266,13 +267,14 @@ class Agent:
         elif(self.orientation=='south'): aheadY = aheadY - 1
         elif(self.orientation=='west'): aheadX = aheadX - 1
 
-        #check if there is arrow to shoot 
+        #check if there is arrow to shoot
         if(bool(list(prolog.query("hasarrow")))):
             #check if wumpus ahead to shoot
             if((aheadX, aheadY) == self.map.npc.wumpus):
-                scream = True 
+                scream = True
                 self.map.npc.wumpus = None #remove wumpus from npc
                 print("Wumpus killed")
+
             else:
                 print("Failed to kill wumpus")
         else:
@@ -309,7 +311,7 @@ class Agent:
             #call the move on the prolog side 
             bool(list(prolog.query(f"move({action},{self.sensory})")))
 
-        #query the knowledge of the agent to update the map 
+        #query the knowledge of the agent to update the map
         if(self.enterWumpus() == True): #check if enter same cell as wumpus
             print("entered wumpus cell, gameover")
             self.x=1
@@ -480,14 +482,15 @@ class Agent:
             # newPosition = list(prolog.query("current(X,Y,D)"))[0]
             # previousPosition = list(prolog.query("current(X,Y,D)"))[1]
             wumpus_count = len(list(prolog.query("wumpus(X,Y)")))
-            # newPosition == previousPosition and 
+            # newPosition == previousPosition and
             hasarrow = bool(list(prolog.query("hasarrow")))
-            if(hasarrow == False and wumpus_count==0):  
+            if(hasarrow == False and wumpus_count==0 and self.initial_scream_heard == 1):
                 self.map.map[self.y][self.x][8] = '@'
+                self.initial_scream_heard = 0
             else:
                 self.map.map[self.y][self.x][7] = '.'
         except IndexError:
-            #no previous position; at the start of the game 
+            #no previous position; at the start of the game
             pass
 
     def enterConfundusPortal(self):
