@@ -335,3 +335,26 @@ determine_safe(X,Y):-
 
     % Focus on rooms adjacent to the agent room. if there is a safe unvisited room, go to it.
     % else, go to a safe visited room. repeat process.
+
+    once(current(X,Y,_)),
+    Z1 is Y + 1,
+    Z2 is Y - 1,
+    Z3 is X + 1,
+    Z4 is X - 1,
+
+    % shoot and pickup action implemetation to be added here
+
+    % Find any safe unvisited rooms
+    (safe(X,Z1) -> goto(X,Z1,L); false),
+    (safe(X,Z2) -> goto(X,Z2,L); false),
+    (safe(Z3,Y) -> goto(Z3,Y,L); false),
+    (safe(Z4,Y) -> goto(Z4,Y,L); false),
+
+    % if no safe unvisited rooms go to a safe visited room
+    (visited(X,Z1) -> goto(X,Z1,L); false),
+    (visited(X,Z2) -> goto(X,Z2,L); false),
+    (visited(Z3,Y) -> goto(Z3,Y,L); false),
+    (visited(Z4,Y) -> goto(Z4,Y,L); false),
+
+%goto(X,Y,L):-
+%    once(A,B,D),

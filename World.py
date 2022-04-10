@@ -276,10 +276,10 @@ class Agent:
         if((aheadX, aheadY) == self.map.npc.wumpus):
             scream = True 
             self.map.npc.wumpus = None #remove wumpus from npc
-            for i in list(prolog.query("wumpus(X,Y)")):
-                prolog.asserta('safe(' + str(i['X']) + ',' + str(i['Y']) + ')')
-                self.map.map[i['Y']][i['X']][4] = 's'
-            prolog.retractall('wumpus(_,_)')
+            # for i in list(prolog.query("wumpus(X,Y)")):
+            #     prolog.asserta('safe(' + str(i['X']) + ',' + str(i['Y']) + ')')
+            #     self.map.map[i['Y']][i['X']][4] = 's'
+            # prolog.retractall('wumpus(_,_)')
             #self.map.updateCellKillWumpus(aheadX, aheadY) #location of wumpus is at aheadX and aheadY, need to remove from cell
             print("Wumpus killed")
         else:
