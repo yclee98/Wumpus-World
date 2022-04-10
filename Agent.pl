@@ -286,9 +286,38 @@ determine_confoundus(X,Y):-
     \+visited(X,Y),
     \+safe(X,Y),
 
-    (\+confoundus(X,Y) 
-        -> asserta(confoundus(X, Y))
-        ; true).
+    (\+confoundus(X,Y) -> check_portal_adj_rm_tingle(X, Y), true ; true).
+
+
+check_portal_adj_rm_tingle(X,Y):-
+    once(current(A, B, _)),
+
+    Z1 is Y + 1,
+    Z2 is Y - 1,
+    Z3 is X + 1,
+    Z4 is X - 1,
+
+    % DO NOT COMPARE WITH LATEST CURRENT POSITION!!!
+    % main room: room that is being considered to be marked with suspected confoundus portal.
+    % adj room: rooms adjacent to the main room
+
+    % if adj room not visited, and main room confoundus(X,Y) = false(avoid dups) -> mark main room with confoundus, continue comparison.
+    (( Z1 =\= B, \+visited(X, Z1), \+confoundus(X,Y)) -> asserta(confoundus(X, Y)) ; true),
+    (( Z2 =\= B, \+visited(X, Z2), \+confoundus(X,Y)) -> asserta(confoundus(X, Y)) ; true),
+    (( Z3 =\= A, \+visited(Z3, Y), \+confoundus(X,Y)) -> asserta(confoundus(X, Y)) ; true),
+    (( Z4 =\= A, \+visited(Z4, Y), \+confoundus(X,Y)) -> asserta(confoundus(X, Y)) ; true),
+
+    % if adj room is visited & no tingle -> main room has no confoundus(retract).
+    (( Z1 =\= B, visited(X, Z1), \+tingle(x, Z1)) -> retract(confoundus(X,Y)), true ; true),
+    (( Z2 =\= B, visited(X, Z2), \+tingle(x, Z2)) -> retract(confoundus(X,Y)), true ; true),
+    (( Z3 =\= A, visited(Z3, Y), \+tingle(Z3, Y)) -> retract(confoundus(X,Y)), true ; true),
+    (( Z4 =\= A, visited(Z4, Y), \+tingle(Z4, Y)) -> retract(confoundus(X,Y)), true ; true),
+
+    % if adj room is visited, has tingle & main room confoundus(X,Y) = false(avoid dups) -> mark main room with confoundus.
+    (( Z1 =\= B, visited(X, Z1), tingle(x, Z1), \+confoundus(X,Y)) -> asserta(confoundus(X,Y)), true ; true),
+    (( Z2 =\= B, visited(X, Z2), tingle(x, Z2), \+confoundus(X,Y)) -> asserta(confoundus(X,Y)), true ; true),
+    (( Z3 =\= A, visited(Z3, Y), tingle(Z3, Y), \+confoundus(X,Y)) -> asserta(confoundus(X,Y)), true ; true),
+    (( Z4 =\= A, visited(Z4, Y), tingle(Z4, Y), \+confoundus(X,Y)) -> asserta(confoundus(X,Y)), true ; true).
 
 
 determine_safe(X,Y):-
@@ -303,3 +332,6 @@ determine_safe(X,Y):-
 
 
 %explore(L):-
+
+    % Focus on rooms adjacent to the agent room. if there is a safe unvisited room, go to it.
+    % else, go to a safe visited room. repeat process.
