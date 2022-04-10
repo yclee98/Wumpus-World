@@ -18,8 +18,9 @@
 
     %explore path
     path/2,
-    visitedPath/2,
-    pathCompleted/1.
+    visited_path/2,
+    path_completed/1,
+    list_of_actions/1.
 
 
 reborn():-
@@ -84,35 +85,6 @@ move(A, [Confounded, Stench, Tingle, Glitter, Bump, Scream]):-
     update_coin(Glitter),
     update_scream(Scream),
     update_safe().
-
-
-update_bump(0):- write("bump0 "),true.
-
-%assert current position to be the same to indicate a bump resulting in being same room
-%remove the room from safe as it is not accessible
-%return false when there is bump
-update_bump(1):-
-    write("bump1 "),
-    once(current(X, Y, D)),
-    asserta(current(X,Y,D)),
-
-    Z1 is Y + 1,
-    Z2 is Y - 1, 
-    Z3 is X + 1, 
-    Z4 is X - 1, 
-    (D == rnorth -> update_bump(X, Z1);
-     D == rsouth -> update_bump(X, Z2);
-     D == reast -> update_bump(Z3, Y);
-     D == rwest -> update_bump(Z4, Y)),
-
-    false. 
-
-update_bump(X,Y):-
-    %there cannot be wumpus, confoundus and safe if experience bump infront
-    (retract(wumpus(X,Y))->true; true),
-    (retract(confoundus(X,Y))->true; true),
-    (retract(safe(X,Y))->true; true),
-    asserta(wall(X,Y)).
 
 update_action(turnleft):-
     write("turnleft "),
@@ -230,6 +202,34 @@ update_portal(1, indicator):-
         -> asserta(confoundus(X, Y))
         ; true).
 
+update_bump(0):- write("bump0 "),true.
+
+%assert current position to be the same to indicate a bump resulting in being same room
+%remove the room from safe as it is not accessible
+%return false when there is bump
+update_bump(1):-
+    write("bump1 "),
+    once(current(X, Y, D)),
+    asserta(current(X,Y,D)),
+
+    Z1 is Y + 1,
+    Z2 is Y - 1, 
+    Z3 is X + 1, 
+    Z4 is X - 1, 
+    (D == rnorth -> update_bump(X, Z1);
+     D == rsouth -> update_bump(X, Z2);
+     D == reast -> update_bump(Z3, Y);
+     D == rwest -> update_bump(Z4, Y)),
+
+    false. 
+
+update_bump(X,Y):-
+    %there cannot be wumpus, confoundus and safe if experience bump infront
+    (retract(wumpus(X,Y))->true; true),
+    (retract(confoundus(X,Y))->true; true),
+    (retract(safe(X,Y))->true; true),
+    asserta(wall(X,Y)).
+
 update_scream(0):-
     write("scream0 "),
     true.
@@ -238,6 +238,7 @@ update_scream(1):-
     write("scream1 "),
     retractall(wumpus_alive()),
     retractall(wumpus(_,_)).
+
 
 update_coin(0):-
     write("glitter0 "),
@@ -403,21 +404,22 @@ test_plan_path():-
     asserta(visited(4,2)),
 
     %plan a path to a unvisited room
-    plan_path(4,2, 3,4).
+    find_path_start(4,2, 3,2).
+
 
 
 %plan a path from xy to Xd yd (safe location)
 %path store in path(X,Y)
-plan_path(X, Y, Xd, Yd):-
+find_path_start(X, Y, Xd, Yd):-
     %as we use visited to get a list of connected path need the destination location to be inside
     %as safe room is not inside visited, put it in visited and remove at the end of search
     (\+visited(Xd,Yd) -> asserta(visited(Xd,Yd)); true),
 
-    retractall(path(_,_)), %to keep track the path from start to destination
-    retractall(pathVisited(_,_)), %to keep track all visited path from this search
-    retractall(pathCompleted(_)), %to stop searching when a path is found
+    retractall(path(_,_)), %to keep track the path to destination
+    retractall(visited_path(_,_)), %to keep track all visited path from this search
+    retractall(path_completed(_)), %to stop searching when a path is found
 
-    asserta(pathVisited(X, Y)),
+    asserta(visited_path(X, Y)),
     find_path(X,Y,Xd,Yd),
 
     retract(visited(Xd, Yd)).
@@ -426,22 +428,22 @@ plan_path(X, Y, Xd, Yd):-
 find_path(X, Y, Xd, Yd):-
     (X =:= Xd, Y =:= Yd),
     write("Path found"),
-    asserta(pathCompleted(1)),
+    asserta(path_completed(1)),
     !.
 
 % recursively search for a room that is adjacent and visited by agent 
 find_path(X, Y, Xd, Yd):-
-    \+pathCompleted(1),
+    \+path_completed(1),
 
     %get next room from visited which is adjacent and not yet visited by this path search 
     visited(XV, YV), 
-    \+pathVisited(XV,YV),
+    \+visited_path(XV,YV),
     is_adjacent(X, Y, XV, YV),
 
-    \+pathCompleted(1),
+    \+path_completed(1),
     
-    write("path "), write(XV) , write(" ") ,  write(YV), nl,
-    (\+pathVisited(XV,YV) -> assertz(pathVisited(XV,YV)); true),
+    %write("path "), write(XV) , write(" ") ,  write(YV), nl,
+    (\+visited_path(XV,YV) -> assertz(visited_path(XV,YV)); true),
     (\+path(XV,YV) -> assertz(path(XV,YV)); true),
     
     %find a path from the visited room taken from visited to destination 
@@ -449,13 +451,16 @@ find_path(X, Y, Xd, Yd):-
 
 %when there is no path ahead, retract this path
 find_path(X,Y,_,_):-
-    \+pathCompleted(1),
+    \+path_completed(1),
     retract(path(X,Y)).
 
 
-% check if x y is adjacent to xt yt
+% check if x y is adjacent to xd yd
 is_adjacent(X,Y,Xd,Yd) :-
     ((X =:= Xd, Y =:= Yd+1);
     (X =:= Xd, Y =:= Yd-1);
     (X =:= Xd+1, Y =:= Yd);
     (X =:= Xd-1, Y =:= Yd)), !.
+
+
+
