@@ -1,5 +1,5 @@
 %use asserta to add to beginning and retract to remove
-:-dynamic
+    :-dynamic
     current/3,
     visited/2,
     wumpus/2,
@@ -15,6 +15,9 @@
     agent_alive/0,
     has_gold/0,
     initial_stench/0,
+    next_direction/1,
+    list_of_actions/1,
+    relative_current/3,
 
     %explore path
     path/2,
@@ -49,7 +52,7 @@ reborn():-
     asserta(visited(0,0)).
 
 
-reposition([Confounded, Stench, Tingle, _, _, _]):- 
+reposition([Confounded, Stench, Tingle, _, _, _]):-
     write("repositioning "),
     retractall(current(_, _, _)),
     retractall(visited(_, _)),
@@ -68,31 +71,32 @@ reposition([Confounded, Stench, Tingle, _, _, _]):-
     update_wumpus(Stench),
     update_portal(Tingle),
     update_safe().
-    
 
-% A = Forward, TurnLeft, TurnRight
-% D = rnorth, rsouth, reast, rwest
-% L = [Confounded, Stench, Tingle, Glitter, Bump, Scream]
-% 1 = on, 0 = off
-% sensory is received after making the move on the python side so need to update_action first before responsing to the sensory
-move(A, [Confounded, Stench, Tingle, Glitter, Bump, Scream]):-
+
+    % A = Forward, TurnLeft, TurnRight
+    % D = rnorth, rsouth, reast, rwest
+    % L = [Confounded, Stench, Tingle, Glitter, Bump, Scream]
+    % 1 = on, 0 = off
+    % sensory is received after making the move on the python side so need to update_action first before responsing to the sensory
+    move(A, [Confounded, Stench, Tingle, Glitter, Bump, Scream]):-
     update_bump(Bump), %if there is a bump then will not run the code below
 
     update_action(A), %for turnleft, turnright there is no need to run code below so they will return false
-    update_portal(Confounded, indicator), %update the confounded indicator    
+    update_portal(Confounded, indicator), %update the confounded indicator
     update_wumpus(Stench),
     update_portal(Tingle),
     update_coin(Glitter),
     update_scream(Scream),
     update_safe().
 
+
 update_action(turnleft):-
     write("turnleft "),
     once(current(X, Y, D)),
     (D == rnorth -> asserta(current(X, Y, rwest));
-     D == rsouth -> asserta(current(X, Y, reast));
-     D == reast -> asserta(current(X, Y, rnorth));
-     D == rwest -> asserta(current(X, Y, rsouth))),
+    D == rsouth -> asserta(current(X, Y, reast));
+    D == reast -> asserta(current(X, Y, rnorth));
+    D == rwest -> asserta(current(X, Y, rsouth))),
     false.
 
 
@@ -100,9 +104,9 @@ update_action(turnright):-
     write("turnright "),
     once(current(X, Y, D)),
     (D == rnorth -> asserta(current(X, Y, reast));
-     D == rsouth -> asserta(current(X, Y, rwest));
-     D == reast -> asserta(current(X, Y, rsouth));
-     D == rwest -> asserta(current(X, Y, rnorth))),
+    D == rsouth -> asserta(current(X, Y, rwest));
+    D == reast -> asserta(current(X, Y, rsouth));
+    D == rwest -> asserta(current(X, Y, rnorth))),
     false.
 
 
@@ -111,24 +115,25 @@ update_action(moveforward):-
     once(current(X, Y, D)),
 
     Z1 is Y + 1,
-    Z2 is Y - 1, 
-    Z3 is X + 1, 
-    Z4 is X - 1, 
-    
+    Z2 is Y - 1,
+    Z3 is X + 1,
+    Z4 is X - 1,
+
     (D == rnorth -> asserta(current(X, Z1, D));
-     D == rsouth -> asserta(current(X, Z2, D));
-     D == reast -> asserta(current(Z3, Y, D));
-     D == rwest -> asserta(current(Z4, Y, D))),
+    D == rsouth -> asserta(current(X, Z2, D));
+    D == reast -> asserta(current(Z3, Y, D));
+    D == rwest -> asserta(current(Z4, Y, D))),
 
     %get new current to update visited
     %retract safe, wumpus and confoundus, since visited they not possible be there
     once(current(X1,Y1,_)),
-    (\+visited(X1,Y1) 
+    (\+visited(X1,Y1)
         -> asserta(visited(X1, Y1))
-        ; true),
+    ; true),
     (retract(wumpus(X1,Y1))->true; true),
     (retract(confoundus(X1,Y1))->true; true),
     (retract(safe(X1,Y1))->true; true).
+
 
 update_action(shoot):-
     write("shoot "),
@@ -198,7 +203,7 @@ update_portal(0, indicator):-
 update_portal(1, indicator):-
     write("confoundus1 "),
     once(current(X,Y,_)),
-    (\+confoundus(X,Y) 
+    (\+confoundus(X,Y)
         -> asserta(confoundus(X, Y))
         ; true).
 
@@ -261,7 +266,7 @@ update_safe():-
     Z2 is Y - 1, (determine_safe(X, Z2) ->true; true),
     Z3 is X + 1, (determine_safe(Z3, Y) ->true; true),
     Z4 is X - 1, (determine_safe(Z4, Y) ->true; true).
-    
+
 
 % find overlapping wumpus(X,Y) rooms in KB (previously existed), wumpus may be in those overlapping rooms
 determine_wumpus(X,Y):-
@@ -308,7 +313,7 @@ check_wumpus_adj_rm_stench(X,Y):-
     (( Z4 =\= A, visited(Z4, Y), stench(Z4, Y), \+wumpus(X,Y)) -> asserta(wumpus(X,Y)), false ; true).
 
 determine_confoundus(X,Y):-
-    % confoundus cannot be in a cell that has been visited or mark as safe 
+    % confoundus cannot be in a cell that has been visited or mark as safe
     \+visited(X,Y),
     \+safe(X,Y),
 
@@ -351,14 +356,14 @@ determine_safe(X,Y):-
     \+visited(X,Y),
     \+wumpus(X,Y),
     \+confoundus(X,Y),
-
-    (\+safe(X,Y) 
+    \+wall(X,Y),
+    (\+safe(X,Y)
         -> asserta(safe(X,Y))
         ; true).
 
 
 %explore(L):-
-
+    %(retractall(list_of_actions(_)) -> true; true),
     % Focus on rooms adjacent to the agent room. if there is a safe unvisited room, go to it.
     % else, go to a safe visited room. repeat process.
 
@@ -388,7 +393,8 @@ determine_safe(X,Y):-
 %test out plan path
 test_plan_path():-
     retractall(visited(_,_)),
-
+	retractall(path(_,_)),
+	asserta(current(4,2,rnorth)),
     asserta(visited(1,1)),
     asserta(visited(1,3)),
 
@@ -399,13 +405,67 @@ test_plan_path():-
 
     asserta(visited(3,1)),
     %asserta(visited(3,3)),
-    
+
     asserta(visited(4,1)),
     asserta(visited(4,2)),
 
     %plan a path to a unvisited room
-    find_path_start(4,2, 3,2).
+    plan_path(4,2, 3,4),
+    determine_start_action().
 
+%test2():-
+	%retractall(path(_,_)),
+    %asserta(current(3,3,rwest)),
+    %assertz(path(3,2)),
+	%assertz(path(2,2)),
+	%assertz(path(1,2)),
+	%determine_start_action().
+
+determine_start_action():-
+	retractall(next_direction(_)),
+	retractall(list_of_actions(_)),
+	once(current(X,Y,D)),
+	(determine_action(X,Y,D) -> true ; true).
+
+determine_action(X,Y,D):-
+    % get current direction number D2 for comparison
+    ((D == rnorth -> D2 is 1);
+     (D == reast -> D2 is 2);
+     (D == rsouth -> D2 is 3);
+     (D == rwest -> D2 is 4)
+    ),
+    once(path(X2,Y2)),
+    Z1 is Y + 1,
+    Z2 is Y - 1,
+    Z3 is X + 1,
+    Z4 is X - 1,
+    % get the direction of the next room in the path
+    % rnorth = 1, reast = 2, rsouth = 3, rwest = 4
+    (Y2 =:= Y+1, X2 =:= X -> asserta(next_direction(1));
+     Y2 =:= Y-1, X2 =:= X -> asserta(next_direction(3));
+     Y2 =:= Y, X2 =:= X+1 -> asserta(next_direction(2));
+     Y2 =:= Y, X2 =:= X-1 -> asserta(next_direction(4))),
+     % D3 = expected direction number.
+     once(next_direction(D3)),
+    (D2 =:= D3 -> assertz(list_of_actions(forward));
+    change_directions(D2, D3), true),
+	retract(path(X2,Y2)),
+	((D3 =:= 1 -> New_D = rnorth);
+     (D3 =:= 2 -> New_D = reast);
+     (D3 =:= 3 -> New_D = rsouth);
+     (D3 =:= 4 -> New_D = rwest)
+    ),
+	determine_action(X2,Y2,New_D).
+
+change_directions(D2, D3):-
+    % if this function is done, that means agent not facing correct direction -> assertz change of direction
+    % turnright (clkwise direction change) and increment D1(next direction number)
+    D0 is D2 + 1,
+	assertz(list_of_actions(turnright)),
+    % direction number cannot be more than 4, if D1 = 5, (inital direction = rwest), set back to 1 (rnorth)
+    (D0 =:= 5 -> D1 is 1; D1 is D0),
+    % change directions in clockwise fashion
+    (D1 =\= D3 -> change_directions(D1, D3); assertz(list_of_actions(forward)), true).
 
 
 %plan a path from xy to Xd yd (safe location)
