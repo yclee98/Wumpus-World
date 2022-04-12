@@ -53,7 +53,6 @@ reborn():-
 
 
 reposition([Confounded, Stench, Tingle, _, _, _]):-
-    write("repositioning "),
     retractall(current(_, _, _)),
     retractall(visited(_, _)),
     retractall(wumpus(_, _)),
@@ -91,7 +90,6 @@ reposition([Confounded, Stench, Tingle, _, _, _]):-
 
 
 update_action(turnleft):-
-    write("turnleft "),
     once(current(X, Y, D)),
     (D == rnorth -> asserta(current(X, Y, rwest));
     D == rsouth -> asserta(current(X, Y, reast));
@@ -99,9 +97,7 @@ update_action(turnleft):-
     D == rwest -> asserta(current(X, Y, rsouth))),
     false.
 
-
 update_action(turnright):-
-    write("turnright "),
     once(current(X, Y, D)),
     (D == rnorth -> asserta(current(X, Y, reast));
     D == rsouth -> asserta(current(X, Y, rwest));
@@ -109,9 +105,7 @@ update_action(turnright):-
     D == rwest -> asserta(current(X, Y, rnorth))),
     false.
 
-
 update_action(moveforward):-
-    write("forward "),
     once(current(X, Y, D)),
 
     Z1 is Y + 1,
@@ -127,27 +121,29 @@ update_action(moveforward):-
     %get new current to update visited
     %retract safe, wumpus and confoundus, since visited they not possible be there
     once(current(X1,Y1,_)),
-    (\+visited(X1,Y1)
-        -> asserta(visited(X1, Y1))
-    ; true),
+    %(\+visited(X1,Y1)
+    %    -> asserta(visited(X1, Y1))
+    %; true),
+
+    (once(retract(visited(X1,Y1))) -> true; true),
+    asserta(visited(X1,Y1)),
+
     (retract(wumpus(X1,Y1))->true; true),
     (retract(confoundus(X1,Y1))->true; true),
     (retract(safe(X1,Y1))->true; true).
 
 
 update_action(shoot):-
-    write("shoot "),
     %once(current(X, Y, D)),
     %asserta(current(X,Y,D)),
     retractall(hasarrow()).
 
 update_action(pickup):-
-    write("pickup "),
     retractall(has_gold),
     retractall(glitter(_,_)).
 
+
 update_wumpus(0):-
-    write("stench0 "),
     once(current(X,Y,_)),
 
     % if stench is not perceived, wumpus cannot be in adj rooms
@@ -159,7 +155,6 @@ update_wumpus(0):-
 
 
 update_wumpus(1):-
-    write("stench1 "),
     once(current(X,Y,_)),
     asserta(stench(X,Y)),
 
@@ -171,7 +166,6 @@ update_wumpus(1):-
 
 
 update_portal(0):-
-    write("tingle0 "),
     once(current(X,Y,_)),
 
     % if tingle is not perceived, portal cannot be in adj rooms
@@ -183,7 +177,6 @@ update_portal(0):-
 
 % if perceived tingle, update KB that portal MAY be in one of the adj rooms
 update_portal(1):-
-    write("tingle1 "),
     once(current(X,Y,_)),
     asserta(tingle(X,Y)),
 
@@ -196,24 +189,21 @@ update_portal(1):-
 
 % to update confoundus indicator
 update_portal(0, indicator):-
-    write("confoundus0 "),
     true.
 
 
 update_portal(1, indicator):-
-    write("confoundus1 "),
     once(current(X,Y,_)),
     (\+confoundus(X,Y)
         -> asserta(confoundus(X, Y))
         ; true).
 
-update_bump(0):- write("bump0 "),true.
+update_bump(0):- true.
 
 %assert current position to be the same to indicate a bump resulting in being same room
 %remove the room from safe as it is not accessible
 %return false when there is bump
 update_bump(1):-
-    write("bump1 "),
     once(current(X, Y, D)),
     asserta(current(X,Y,D)),
 
@@ -236,30 +226,25 @@ update_bump(X,Y):-
     asserta(wall(X,Y)).
 
 update_scream(0):-
-    write("scream0 "),
     true.
 
 update_scream(1):-
-    write("scream1 "),
     retractall(wumpus_alive()),
     retractall(wumpus(_,_)).
 
 
 update_coin(0):-
-    write("glitter0 "),
     true.
 
 
 % if percieve glitter, cell is inhabited by coin
 update_coin(1):-
-    write("glitter1 "),
     once(current(X,Y,_)),
     asserta(glitter(X,Y)).
 
 
 % update safe rooms
 update_safe():-
-    write("safe "),
     once(current(X,Y,_)),
 
     Z1 is Y + 1, (determine_safe(X, Z1) ->true; true),
@@ -361,34 +346,60 @@ determine_safe(X,Y):-
         -> asserta(safe(X,Y))
         ; true).
 
+%when there is coin to pickup then go to that location to pickup
+explore(L):-
+    glitter(X,Y),
 
+    find_path_start(X, Y),
+    determine_start_action(),
+    assertz(list_of_actions(pickup)),
+    findall(A, list_of_actions(A), L),
+    write("explore pickup"),nl,
+    !.
+
+%when confirm wumpus location then action is shoot
+%only shoot when we are certain of wumpus locatin which is when count of wumpus() is 1
 %explore(L):-
-    %(retractall(list_of_actions(_)) -> true; true),
-    % Focus on rooms adjacent to the agent room. if there is a safe unvisited room, go to it.
-    % else, go to a safe visited room. repeat process.
+    %aggregate_all(count, wumpus(_,_), Count),
+    %Count == 1,
+    %once(wumpus(X,Y)),
 
-    %once(current(X,Y,_)),
-    %Z1 is Y + 1,
-    %Z2 is Y - 1,
-    %Z3 is X + 1,
-    %Z4 is X - 1,
+    %find a room that is adjacent to wumpus that is visited
+    %visited(XV,YV),
+    %is_adjacent(X,Y,XV,YV),
 
-    % shoot and pickup action implemetation to be added here
+    %assertz(list_of_actions(shoot)),
+    %findall(A, list_of_actions(A), L),
+    %write("explore shoot"),nl,
+    %!.
 
-    % Find any safe unvisited rooms
-    %(safe(X,Z1) -> goto(X,Z1,L); false),
-    %(safe(X,Z2) -> goto(X,Z2,L); false),
-    %(safe(Z3,Y) -> goto(Z3,Y,L); false),
-    %(safe(Z4,Y) -> goto(Z4,Y,L); false),
+%when there is no glitter to pickup or wumpus to shoot then go to a safe location
+explore(L):-
+    once(safe(Xs,Ys)),
+    has_gold(),
+    find_path_start(Xs, Ys),
+    determine_start_action(),
+    findall(A, list_of_actions(A), L),
+    write("explore safe"),nl,
+    !.
 
-    % if no safe unvisited rooms go to a safe visited room
-    %(visited(X,Z1) -> goto(X,Z1,L); false),
-    %(visited(X,Z2) -> goto(X,Z2,L); false),
-    %(visited(Z3,Y) -> goto(Z3,Y,L); false),
-    %(visited(Z4,Y) -> goto(Z4,Y,L); false),
+%when there is no safe location but there is still gold left then go to confoundus portal
+%explore(L):-
+%    once(confoundus(X,Y)),
+%    has_gold(),
+%    find_path_start(Xs, Ys),
+%    determine_start_action(),
+%    findall(A, list_of_actions(A), L),
+%    write("explore confoundus"),nl,
+%    !.
 
-%goto(X,Y,L):-
-%    once(A,B,D),
+%if there is no safe location then go back to origin 0,0
+explore(L):-
+    find_path_start(0, 0),
+    determine_start_action(),
+    findall(A, list_of_actions(A), L),
+    write("explore origin"),nl,
+    !.
 
 %test out plan path
 test_plan_path():-
@@ -410,7 +421,7 @@ test_plan_path():-
     asserta(visited(4,2)),
 
     %plan a path to a unvisited room
-    plan_path(4,2, 3,4),
+    find_path_start(4,2, 3,4),
     determine_start_action().
 
 %test2():-
@@ -447,7 +458,7 @@ determine_action(X,Y,D):-
      Y2 =:= Y, X2 =:= X-1 -> asserta(next_direction(4))),
      % D3 = expected direction number.
      once(next_direction(D3)),
-    (D2 =:= D3 -> assertz(list_of_actions(forward));
+    (D2 =:= D3 -> assertz(list_of_actions(moveforward));
     change_directions(D2, D3), true),
 	retract(path(X2,Y2)),
 	((D3 =:= 1 -> New_D = rnorth);
@@ -465,15 +476,16 @@ change_directions(D2, D3):-
     % direction number cannot be more than 4, if D1 = 5, (inital direction = rwest), set back to 1 (rnorth)
     (D0 =:= 5 -> D1 is 1; D1 is D0),
     % change directions in clockwise fashion
-    (D1 =\= D3 -> change_directions(D1, D3); assertz(list_of_actions(forward)), true).
+    (D1 =\= D3 -> change_directions(D1, D3); assertz(list_of_actions(moveforward)), true).
 
 
-%plan a path from xy to Xd yd (safe location)
+%plan a path from current to Xd yd (safe location)
 %path store in path(X,Y)
-find_path_start(X, Y, Xd, Yd):-
+find_path_start(Xd, Yd):-
+    once(current(X,Y,_)),
     %as we use visited to get a list of connected path need the destination location to be inside
     %as safe room is not inside visited, put it in visited and remove at the end of search
-    (\+visited(Xd,Yd) -> asserta(visited(Xd,Yd)); true),
+    asserta(visited(Xd,Yd)),
 
     retractall(path(_,_)), %to keep track the path to destination
     retractall(visited_path(_,_)), %to keep track all visited path from this search
@@ -482,12 +494,13 @@ find_path_start(X, Y, Xd, Yd):-
     asserta(visited_path(X, Y)),
     find_path(X,Y,Xd,Yd),
 
-    retract(visited(Xd, Yd)).
+    path_completed(1),
+    once(retract(visited(Xd, Yd))).
 
 %when x y == xd yd mean a path is found
 find_path(X, Y, Xd, Yd):-
     (X =:= Xd, Y =:= Yd),
-    write("Path found"),
+    write("Path found "),
     asserta(path_completed(1)),
     !.
 
@@ -499,7 +512,6 @@ find_path(X, Y, Xd, Yd):-
     visited(XV, YV), 
     \+visited_path(XV,YV),
     is_adjacent(X, Y, XV, YV),
-
     \+path_completed(1),
     
     %write("path "), write(XV) , write(" ") ,  write(YV), nl,

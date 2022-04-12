@@ -200,12 +200,22 @@ class Agent:
         self.sensory = [1,0,0,0,0,0]
         self.initial_scream_heard = 1
 
+    def start(self):
+        while(True):
+            self.explore()
+
     def spawnAgent(self):
+        self.x=1
+        self.y=1
+        self.orientation="north"
+        self.initial_scream_heard = 1
+        self.sensory = self.map.perceiveSensory((self.x, self.y))
+        self.sensory[0] = 1
         bool(list(prolog.query("reborn()")))
         bool(list(prolog.query(f"reposition({self.sensory})")))
-        #print the relative map at the inital start of the game to test if agent get the confounded knowledge
         self.queryAgentKnowledge()
         self.map.printMap(self.sensory)
+        
 
     def moveForward(self):
         bump = False
@@ -278,7 +288,7 @@ class Agent:
             else:
                 print("Failed to kill wumpus")
         else:
-            print("no arrow to shoot")
+            print("No arrow to shoot")
 
         return scream
 
@@ -312,17 +322,15 @@ class Agent:
             bool(list(prolog.query(f"move({action},{self.sensory})")))
 
         #query the knowledge of the agent to update the map
-        if(self.enterWumpus() == True): #check if enter same cell as wumpus
-            print("entered wumpus cell, gameover")
-            self.x=1
-            self.y=1
-            self.orientation="north"
-            self.map.clearMap()
-            self.sensory = self.map.perceiveSensory((self.x, self.y))   
-            bool(list(prolog.query("reborn()")))
-            bool(list(prolog.query(f"reposition({self.sensory})")))
         self.queryAgentKnowledge()
         self.map.printMap(self.sensory)
+
+        self.checkEndGame()
+
+    def explore(self):
+        for i in list(prolog.query("explore(L)"))[0]['L']:
+            a = str(i)
+            self.move(a)
 
 
     def queryAgentKnowledge(self):
@@ -397,6 +405,8 @@ class Agent:
             possibleY = i['Y'] + offsetY
             print(f"({possibleX}, {possibleY})", end = " ")
             # if(possibleX > 0 and possibleX < 5 and possibleY > 0 and possibleY < 6):
+            self.map.map[possibleY][possibleX][3] = '.'
+            self.map.map[possibleY][possibleX][5] = '.'
             self.map.map[possibleY][possibleX][4] = 's'
         print()
 
@@ -478,24 +488,17 @@ class Agent:
             pass
 
         #update scream
-        try:
-            # newPosition = list(prolog.query("current(X,Y,D)"))[0]
-            # previousPosition = list(prolog.query("current(X,Y,D)"))[1]
-            wumpus_count = len(list(prolog.query("wumpus(X,Y)")))
-            # newPosition == previousPosition and
-            hasarrow = bool(list(prolog.query("hasarrow")))
-            if(hasarrow == False and wumpus_count==0 and self.initial_scream_heard == 1):
-                self.map.map[self.y][self.x][8] = '@'
-                self.initial_scream_heard = 0
-            else:
-                self.map.map[self.y][self.x][7] = '.'
-        except IndexError:
-            #no previous position; at the start of the game
-            pass
+        wumpus_count = len(list(prolog.query("wumpus(X,Y)")))
+        hasarrow = bool(list(prolog.query("hasarrow")))
+        if(hasarrow == False and wumpus_count==0 and self.initial_scream_heard == 1):
+            self.map.map[self.y][self.x][8] = '@'
+            self.initial_scream_heard = 0
+        else:
+            self.map.map[self.y][self.x][8] = '.'
+        
 
     def enterConfundusPortal(self):
         print("standing on portal")
-        #self.map.map[self.y][self.x][4] = 'O'
         listofNPC = set() # get list of npcs
         #typeWumpus = type(self.map.npc.wumpus) is tuple # checking if there is more than 1 wumpus
         typeCoin = type(self.map.npc.coin) is tuple # checking if there is more than 1 coin
@@ -536,25 +539,35 @@ class Agent:
                 #self.map.printMap(self.sensory)
         # reflect on the map
 
+    def checkEndGame(self):
+        w = self.enterWumpus()
+        o = self.returnOrign()
+        if (w == True or o == True):
+            print("=================================")
+            print("============GAME OVER============")
+            print("=================================")
+            quit()
+            self.map.clearMap()
+            self.spawnAgent()
+            return True
+
+    #when there is no coin and agent return to origin 
+    def returnOrign(self):
+        if(self.map.npc.coin == None and self.x==1 and self.y==1):
+            print("coin collected, returned to origin, ganeover")
+            return True
+        return False
+
+
     def enterWumpus(self):
         if(self.map.npc.wumpus == None): return False
 
         if((self.x, self.y) == self.map.npc.wumpus):
+            print("entered wumpus cell, gameover")
             return True
         else:
             return False
-        # listofWumpus = set()
-        # typeWumpus = type(self.map.npc.wumpus) is tuple
-        # if (typeWumpus == False):
-        #     for i in range(len(self.map.npc.wumpus)):
-        #             listofWumpus.add(self.map.npc.wumpus[i])
-        # else:
-        #     listofWumpus.add(self.map.npc.wumpus)
-        # currentPosition = (self.x,self.y)
-        # if currentPosition in listofWumpus:
-        #     return True
-        # else:
-        #     return False
+        
 
 
 

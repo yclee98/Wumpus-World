@@ -8,23 +8,27 @@ def main():
     #initializing objects
     map = Map(rows, columns, innerCell)
     npc = NPC()
+    #store map inside Agent class
     agent = Agent(map)
 
     #create map and spawn npc
     map.createMap()
+    #store NPC inside map cass
     map.setNpc(npc)
 
-    #absolute map prinout 
-    npc.printNPC()
-    #map.printMap(agent.sensory)
-
-    #spawn the agent which will also query the prolog for knowledge, only confoundus is on at the start
     agent.spawnAgent()
+
+    #if u want random npc location uncomment
+    #npc.spawnNPC(agent.x, agent.y, rows, columns)
+    npc.printNPC()
+
+    #make agent explore automatically
+    #agent.start()
     
     
     move = ""
     while(move != "1"):
-        move = input("1 to exit; available input (f l r s p): ")
+        move = input("1 to exit; available input (f l r s p e): ")
         if(move == "f"):
             agent.move("moveforward")
         elif (move =="l"):
@@ -35,8 +39,8 @@ def main():
             agent.move("shoot")
         elif(move=="p"):
             agent.move("pickup")
-        elif(move=="2"):
-            map.clearMap()
+        elif(move=="e"):
+            agent.explore()
 
 
 if __name__== "__main__":
