@@ -437,17 +437,6 @@ flip_axis_Y(X_diff, Y_diff):-
     ((Y_diff  =:= 1 ; Y_diff  =:= -1) -> assertz(list_of_actions(moveforward)), true; true).
 
 
-change_directions(D2, D3):-
-    % if this function is done, that means agent not facing correct direction -> assertz change of direction
-    % turnright (clkwise direction change) and increment D1(next direction number)
-    D0 is D2 + 1,
-	assertz(list_of_actions(turnright)),
-    % direction number cannot be more than 4, if D1 = 5, (inital direction = rwest), set back to 1 (rnorth)
-    (D0 =:= 5 -> D1 is 1; D1 is D0),
-    % change directions in clockwise fashion
-    (D1 =\= D3 -> change_directions(D1, D3); assertz(list_of_actions(moveforward)), true).
-
-
 %plan a path from current to Xd yd (safe location)
 %path store in path(X,Y)
 find_path_start(Xd, Yd):-
