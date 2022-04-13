@@ -63,6 +63,8 @@ reposition([Confounded, Stench, Tingle, _, _, _]):-
     retractall(safe(_, _)),
     retractall(wall(_,_)),
 
+    asserta(initial_stench),
+
     asserta(current(0,0,rnorth)),
     asserta(visited(0,0)),
 
@@ -72,12 +74,12 @@ reposition([Confounded, Stench, Tingle, _, _, _]):-
     update_safe().
 
 
-    % A = Forward, TurnLeft, TurnRight
-    % D = rnorth, rsouth, reast, rwest
-    % L = [Confounded, Stench, Tingle, Glitter, Bump, Scream]
-    % 1 = on, 0 = off
-    % sensory is received after making the move on the python side so need to update_action first before responsing to the sensory
-    move(A, [Confounded, Stench, Tingle, Glitter, Bump, Scream]):-
+% A = Forward, TurnLeft, TurnRight
+% D = rnorth, rsouth, reast, rwest
+% L = [Confounded, Stench, Tingle, Glitter, Bump, Scream]
+% 1 = on, 0 = off
+% sensory is received after making the move on the python side so need to update_action first before responsing to the sensory
+move(A, [Confounded, Stench, Tingle, Glitter, Bump, Scream]):-
     update_bump(Bump), %if there is a bump then will not run the code below
 
     update_action(A), %for turnleft, turnright there is no need to run code below so they will return false
@@ -384,14 +386,14 @@ explore(L):-
     !.
 
 %when there is no safe location but there is still gold left then go to confoundus portal
-%explore(L):-
-%    once(confoundus(X,Y)),
-%    has_gold(),
-%    find_path_start(Xs, Ys),
-%    determine_start_action(),
-%    findall(A, list_of_actions(A), L),
-%    write("explore confoundus"),nl,
-%    !.
+explore(L):-
+    once(confoundus(X,Y)),
+    has_gold(),
+    find_path_start(X, Y),
+    determine_start_action(),
+    findall(A, list_of_actions(A), L),
+    write("explore confoundus"),nl,
+    !.
 
 %if there is no safe location then go back to origin 0,0
 explore(L):-
