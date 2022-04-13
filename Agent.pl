@@ -441,34 +441,38 @@ determine_start_action():-
 	(determine_action(X,Y,D) -> true ; true).
 
 determine_action(X,Y,D):-
-    % get current direction number D2 for comparison
-    ((D == rnorth -> D2 is 1);
-     (D == reast -> D2 is 2);
-     (D == rsouth -> D2 is 3);
-     (D == rwest -> D2 is 4)
-    ),
-    once(path(X2,Y2)),
-    Z1 is Y + 1,
-    Z2 is Y - 1,
-    Z3 is X + 1,
-    Z4 is X - 1,
-    % get the direction of the next room in the path
-    % rnorth = 1, reast = 2, rsouth = 3, rwest = 4
-    (Y2 =:= Y+1, X2 =:= X -> asserta(next_direction(1));
-     Y2 =:= Y-1, X2 =:= X -> asserta(next_direction(3));
-     Y2 =:= Y, X2 =:= X+1 -> asserta(next_direction(2));
-     Y2 =:= Y, X2 =:= X-1 -> asserta(next_direction(4))),
-     % D3 = expected direction number.
-     once(next_direction(D3)),
-    (D2 =:= D3 -> assertz(list_of_actions(moveforward));
-    change_directions(D2, D3), true),
-	retract(path(X2,Y2)),
-	((D3 =:= 1 -> New_D = rnorth);
-     (D3 =:= 2 -> New_D = reast);
-     (D3 =:= 3 -> New_D = rsouth);
-     (D3 =:= 4 -> New_D = rwest)
-    ),
-	determine_action(X2,Y2,New_D).
+    once(path(PX, PY)),
+	((D == rnorth -> NX is X, NY is Y+1);
+	 (D == rsouth -> NX is X, NY is Y-1);
+	 (D == reast -> NX is X+1, NY is Y);
+	 (D == rwest -> NX is X-1, NY is Y)),
+	X_diff is NX - PX,
+	Y_diff is NY - PY,
+	((Y_diff =:= 2, D == rnorth) -> asserta(next_direction(rsouth)), true; true),
+	((Y_diff =:= -2, D == rsouth) -> asserta(next_direction(rnorth)), true; true),
+	((X_diff =:= 2, D == reast) -> asserta(next_direction(rwest)), true; true),
+	((X_diff =:= -2, D == rwest) -> asserta(next_direction(reast)), true; true),
+	((X_diff =:= 2; X_diff =:= -2) -> assertz(list_of_actions(turnright)), assertz(list_of_actions(turnright)), assertz(list_of_actions(moveforward)), true ; true),
+	((Y_diff =:= 2; Y_diff =:= -2) -> assertz(list_of_actions(turnright)), assertz(list_of_actions(turnright)), assertz(list_of_actions(moveforward)), true ; true),
+	((X_diff =:= 0, Y_diff =:= 0) -> assertz(list_of_actions(moveforward)); true),
+	((D == rnorth ; D == rsouth) -> flip_axis_Y(X_diff, Y_diff), true; true),
+	((D == reast ; D == rwest) -> flip_axis_X(X_diff, Y_diff), true; true),
+	once(next_direction(ND)),
+	retract(path(PX, PY)),
+	determine_action(PX,PY,ND).
+
+
+flip_axis_X(X_diff, Y_diff):-
+	(X_diff  =:= 1 -> (Y_diff =:= 1 -> asserta(next_direction(rsouth)), assertz(list_of_actions(turnright)), true; asserta(next_direction(rnorth)), assertz(list_of_actions(turnleft)), true) ; true),
+	(X_diff  =:= -1 -> (Y_diff =:= 1 -> asserta(next_direction(rsouth)), assertz(list_of_actions(turnleft)), true; asserta(next_direction(rnorth)), assertz(list_of_actions(turnright)), true) ; true),
+	((X_diff  =:= 1 ; X_diff  =:= -1) -> assertz(list_of_actions(moveforward)), true; true).
+
+
+flip_axis_Y(X_diff, Y_diff):-
+	(Y_diff  =:= 1 -> (X_diff =:= 1 -> asserta(next_direction(rwest)), assertz(list_of_actions(turnleft)), true; asserta(next_direction(reast)), assertz(list_of_actions(turnright)), true) ; true),
+	(Y_diff  =:= -1 -> (X_diff =:= 1 -> asserta(next_direction(rwest)), assertz(list_of_actions(turnright)), true; asserta(next_direction(reast)), assertz(list_of_actions(turnleft)), true) ; true),
+    ((Y_diff  =:= 1 ; Y_diff  =:= -1) -> assertz(list_of_actions(moveforward)), true; true).
+
 
 change_directions(D2, D3):-
     % if this function is done, that means agent not facing correct direction -> assertz change of direction
