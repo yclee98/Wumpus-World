@@ -4,15 +4,22 @@ def main():
     rows = 7
     columns = 6
     innerCell = 9
+
+    Rrows=3
+    Rcolumns=3
+    
     
     #initializing objects
     map = Map(rows, columns, innerCell)
+    rMap= RelativeMap(Rrows, Rcolumns, innerCell)
     npc = NPC()
     #store map inside Agent class
-    agent = Agent(map)
+    #agent = Agent(map),
+    agent = Agent(map, rMap)
 
     #create map and spawn npc
     map.createMap()
+    rMap.createMap()
     #store NPC inside map cass
     map.setNpc(npc)
 
