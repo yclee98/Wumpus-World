@@ -9,21 +9,17 @@
     stench/2,
     safe/2,
     wall/2,
-    agent_loc/2,
     hasarrow/0,
     wumpus_alive/0,
-    agent_alive/0,
     has_gold/0,
     initial_stench/0,
     next_direction/1,
     list_of_actions/1,
-    relative_current/3,
 
     %explore path
     path/2,
     visited_path/2,
-    path_completed/1,
-    list_of_actions/1.
+    path_completed/1.
 
 
 reborn():-
@@ -35,11 +31,17 @@ reborn():-
     retractall(glitter(_, _)),
     retractall(stench(_, _)),
     retractall(safe(_, _)),
-    retractall(hasarrow()),
     retractall(wall(_,_)),
-
-    % when reborn, agent loses gold coin
+    retractall(hasarrow()),
+    retractall(wumpus_alive()),
     retractall(has_gold),
+    retractall(initial_stench()),
+    retractall(next_direction(_)),
+    retractall(list_of_actions(_)),
+    retractall(path(_,_)),
+    retractall(visited_path(_,_)),
+    retractall(path_completed(_)),
+
 
     % Set wumpus back alive
     asserta(wumpus_alive),
@@ -47,7 +49,7 @@ reborn():-
     asserta(agent_alive),
     asserta(has_gold),
     asserta(hasarrow),
-    asserta(initial_stench),
+    %asserta(initial_stench),
     asserta(current(0, 0, rnorth)),
     asserta(visited(0,0)).
 
@@ -68,9 +70,9 @@ reposition([Confounded, Stench, Tingle, _, _, _]):-
     asserta(current(0,0,rnorth)),
     asserta(visited(0,0)),
 
-    update_portal(Confounded, indicator),
-    update_wumpus(Stench),
-    update_portal(Tingle),
+    update_confounded(Confounded),
+    update_stench(Stench),
+    update_tingle(Tingle),
     update_safe().
 
 
@@ -83,10 +85,11 @@ move(A, [Confounded, Stench, Tingle, Glitter, Bump, Scream]):-
     update_bump(Bump), %if there is a bump then will not run the code below
 
     update_action(A), %for turnleft, turnright there is no need to run code below so they will return false
-    update_portal(Confounded, indicator), %update the confounded indicator
-    update_wumpus(Stench),
-    update_portal(Tingle),
-    update_coin(Glitter),
+
+    update_confounded(Confounded), 
+    update_stench(Stench),
+    update_tingle(Tingle),
+    update_glitter(Glitter),
     update_scream(Scream),
     update_safe().
 
@@ -123,17 +126,15 @@ update_action(moveforward):-
     %get new current to update visited
     %retract safe, wumpus and confoundus, since visited they not possible be there
     once(current(X1,Y1,_)),
-    %(\+visited(X1,Y1)
-    %    -> asserta(visited(X1, Y1))
-    %; true),
 
+    %keep track of latest visited at the top, 
+    %for room that has been revisited it will remove previous and assert new at the top
     (once(retract(visited(X1,Y1))) -> true; true),
     asserta(visited(X1,Y1)),
 
     (retract(wumpus(X1,Y1))->true; true),
     (retract(confoundus(X1,Y1))->true; true),
     (retract(safe(X1,Y1))->true; true).
-
 
 update_action(shoot):-
     %once(current(X, Y, D)),
@@ -144,8 +145,17 @@ update_action(pickup):-
     retractall(has_gold),
     retractall(glitter(_,_)).
 
+% to update confoundus indicator
+update_confounded(0):-
+    true.
 
-update_wumpus(0):-
+update_confounded(1):-
+    once(current(X,Y,_)),
+    (\+confoundus(X,Y)
+        -> asserta(confoundus(X, Y))
+        ; true).
+
+update_stench(0):-
     once(current(X,Y,_)),
 
     % if stench is not perceived, wumpus cannot be in adj rooms
@@ -156,7 +166,7 @@ update_wumpus(0):-
     Z4 is X - 1, (retract(wumpus(Z4, Y)) ->true; true).
 
 
-update_wumpus(1):-
+update_stench(1):-
     once(current(X,Y,_)),
     asserta(stench(X,Y)),
 
@@ -167,7 +177,7 @@ update_wumpus(1):-
     Z4 is X - 1, (determine_wumpus(Z4, Y) ->true; true).
 
 
-update_portal(0):-
+update_tingle(0):-
     once(current(X,Y,_)),
 
     % if tingle is not perceived, portal cannot be in adj rooms
@@ -178,7 +188,7 @@ update_portal(0):-
 
 
 % if perceived tingle, update KB that portal MAY be in one of the adj rooms
-update_portal(1):-
+update_tingle(1):-
     once(current(X,Y,_)),
     asserta(tingle(X,Y)),
 
@@ -188,17 +198,13 @@ update_portal(1):-
     Z3 is X + 1, (determine_confoundus(Z3, Y) ->true; true),
     Z4 is X - 1, (determine_confoundus(Z4, Y) ->true; true).
 
-
-% to update confoundus indicator
-update_portal(0, indicator):-
+update_glitter(0):-
     true.
 
-
-update_portal(1, indicator):-
+% if percieve glitter, cell is inhabited by coin
+update_glitter(1):-
     once(current(X,Y,_)),
-    (\+confoundus(X,Y)
-        -> asserta(confoundus(X, Y))
-        ; true).
+    asserta(glitter(X,Y)).
 
 update_bump(0):- true.
 
@@ -222,6 +228,7 @@ update_bump(1):-
 
 update_bump(X,Y):-
     %there cannot be wumpus, confoundus and safe if experience bump infront
+    %assert a wall 
     (retract(wumpus(X,Y))->true; true),
     (retract(confoundus(X,Y))->true; true),
     (retract(safe(X,Y))->true; true),
@@ -234,17 +241,6 @@ update_scream(1):-
     retractall(wumpus_alive()),
     retractall(wumpus(_,_)).
 
-
-update_coin(0):-
-    true.
-
-
-% if percieve glitter, cell is inhabited by coin
-update_coin(1):-
-    once(current(X,Y,_)),
-    asserta(glitter(X,Y)).
-
-
 % update safe rooms
 update_safe():-
     once(current(X,Y,_)),
@@ -254,6 +250,15 @@ update_safe():-
     Z3 is X + 1, (determine_safe(Z3, Y) ->true; true),
     Z4 is X - 1, (determine_safe(Z4, Y) ->true; true).
 
+determine_safe(X,Y):-
+    %cell is safe if it there is no possible wumpus and confoundus and not visited
+    \+visited(X,Y),
+    \+wumpus(X,Y),
+    \+confoundus(X,Y),
+    \+wall(X,Y),
+    (\+safe(X,Y)
+        -> asserta(safe(X,Y))
+        ; true).
 
 % find overlapping wumpus(X,Y) rooms in KB (previously existed), wumpus may be in those overlapping rooms
 determine_wumpus(X,Y):-
@@ -306,7 +311,6 @@ determine_confoundus(X,Y):-
 
     (\+confoundus(X,Y) -> check_portal_adj_rm_tingle(X, Y), true ; true).
 
-
 check_portal_adj_rm_tingle(X,Y):-
     once(current(A, B, _)),
 
@@ -337,16 +341,6 @@ check_portal_adj_rm_tingle(X,Y):-
     (( Z3 =\= A, visited(Z3, Y), tingle(Z3, Y), \+confoundus(X,Y)) -> asserta(confoundus(X,Y)), true ; true),
     (( Z4 =\= A, visited(Z4, Y), tingle(Z4, Y), \+confoundus(X,Y)) -> asserta(confoundus(X,Y)), true ; true).
 
-
-determine_safe(X,Y):-
-    %cell is safe if it there is no possible wumpus and confoundus and not visited
-    \+visited(X,Y),
-    \+wumpus(X,Y),
-    \+confoundus(X,Y),
-    \+wall(X,Y),
-    (\+safe(X,Y)
-        -> asserta(safe(X,Y))
-        ; true).
 
 %when there is coin to pickup then go to that location to pickup
 explore(L):-
@@ -402,37 +396,6 @@ explore(L):-
     findall(A, list_of_actions(A), L),
     write("explore origin"),nl,
     !.
-
-%test out plan path
-test_plan_path():-
-    retractall(visited(_,_)),
-	retractall(path(_,_)),
-	asserta(current(4,2,rnorth)),
-    asserta(visited(1,1)),
-    asserta(visited(1,3)),
-
-    asserta(visited(2,1)),
-    asserta(visited(2,2)),
-    asserta(visited(2,3)),
-    asserta(visited(2,4)),
-
-    asserta(visited(3,1)),
-    %asserta(visited(3,3)),
-
-    asserta(visited(4,1)),
-    asserta(visited(4,2)),
-
-    %plan a path to a unvisited room
-    find_path_start(4,2, 3,4),
-    determine_start_action().
-
-%test2():-
-	%retractall(path(_,_)),
-    %asserta(current(3,3,rwest)),
-    %assertz(path(3,2)),
-	%assertz(path(2,2)),
-	%assertz(path(1,2)),
-	%determine_start_action().
 
 determine_start_action():-
 	retractall(next_direction(_)),
