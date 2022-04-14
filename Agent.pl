@@ -133,7 +133,8 @@ update_action(moveforward):-
     asserta(visited(X1,Y1)),
 
     (retract(wumpus(X1,Y1))->true; true),
-    (retract(confoundus(X1,Y1))->true; true),
+    %(retract(confoundus(X1,Y1))->true; true),
+    retract_confoundus(X1, Y1),
     (retract(safe(X1,Y1))->true; true).
 
 update_action(shoot):-
@@ -179,12 +180,10 @@ update_stench(1):-
 
 update_tingle(0):-
     once(current(X,Y,_)),
-
-    % if tingle is not perceived, portal cannot be in adj rooms
-    Z1 is Y + 1, (retract(confoundus(X, Z1))->true; true),
-    Z2 is Y - 1, (retract(confoundus(X, Z2))->true; true),
-    Z3 is X + 1, (retract(confoundus(Z3, Y))->true; true),
-    Z4 is X - 1, (retract(confoundus(Z4, Y))->true; true).
+    Z1 is Y + 1, (retract_confoundus(X,Z1)),
+    Z2 is Y - 1, (retract_confoundus(X,Z2)),
+    Z3 is X + 1, (retract_confoundus(Z3,Y)),
+    Z4 is X - 1, (retract_confoundus(Z4,Y)).
 
 
 % if perceived tingle, update KB that portal MAY be in one of the adj rooms
@@ -197,6 +196,14 @@ update_tingle(1):-
     Z2 is Y - 1, (determine_confoundus(X, Z2) ->true; true),
     Z3 is X + 1, (determine_confoundus(Z3, Y) ->true; true),
     Z4 is X - 1, (determine_confoundus(Z4, Y) ->true; true).
+
+% dont retract the confoundus at 0,0 so that the origin always have a confoundus indicator on
+retract_confoundus(X,Y):-
+    \+((X =:= 0, Y =:=0)),
+    retract(confoundus(X, Y)).
+
+retract_confoundus(X,Y):- true.
+
 
 update_glitter(0):-
     true.
@@ -239,7 +246,8 @@ update_scream(0):-
 
 update_scream(1):-
     retractall(wumpus_alive()),
-    retractall(wumpus(_,_)).
+    retractall(wumpus(_,_)),
+    retractall(stench(_,_)).
 
 % update safe rooms
 update_safe():-
@@ -381,7 +389,8 @@ explore(L):-
 
 %when there is no safe location but there is still gold left then go to confoundus portal
 explore(L):-
-    once(confoundus(X,Y)),
+    confoundus(X,Y),
+    \+visited(X,Y),
     has_gold(),
     find_path_start(X, Y),
     determine_start_action(),
@@ -421,6 +430,10 @@ determine_action(X,Y,D):-
 	((D == rnorth ; D == rsouth) -> flip_axis_Y(X_diff, Y_diff), true; true),
 	((D == reast ; D == rwest) -> flip_axis_X(X_diff, Y_diff), true; true),
 	once(next_direction(ND)),
+
+    % if room adjacent to next path room has wumpus, add additional actions to determine whether or not to shoot it.
+	(determine_path_adj_wumpus(PX, PY, ND) -> true;true),
+
 	retract(path(PX, PY)),
 	determine_action(PX,PY,ND).
 
@@ -435,6 +448,59 @@ flip_axis_Y(X_diff, Y_diff):-
 	(Y_diff  =:= 1 -> (X_diff =:= 1 -> asserta(next_direction(rwest)), assertz(list_of_actions(turnleft)), true; asserta(next_direction(reast)), assertz(list_of_actions(turnright)), true) ; true),
 	(Y_diff  =:= -1 -> (X_diff =:= 1 -> asserta(next_direction(rwest)), assertz(list_of_actions(turnright)), true; asserta(next_direction(reast)), assertz(list_of_actions(turnleft)), true) ; true),
     ((Y_diff  =:= 1 ; Y_diff  =:= -1) -> assertz(list_of_actions(moveforward)), true; true).
+
+determine_path_adj_wumpus(X, Y, D):-
+	% check if the wumpus is in one of the rooms adjacent to the next path room.
+	Z1 is Y + 1,
+    Z2 is Y - 1,
+    Z3 is X + 1,
+    Z4 is X - 1,
+
+	(wumpus(X,Z1) -> shoot_wumpus(X,Z1,D);true),
+	(wumpus(X,Z2) -> shoot_wumpus(X,Z2,D);true),
+	(wumpus(Z3,Y) -> shoot_wumpus(Z3,Y,D);true),
+	(wumpus(Z4,Y) -> shoot_wumpus(Z4,Y,D);true).
+
+shoot_wumpus(WX,WY,D):-
+	% find total num of recorded wumpus room assumptions
+	aggregate_all(count, wumpus(_,_), Wumpus_count),
+
+	% if more than 1 wumpus room count, then agent is unsure where the wumpus is. -> dont shoot, stop function here.
+	(Wumpus_count > 2 -> false;true),
+
+	once(path(NX, NY)),
+	((D == rnorth -> AX is NX, AY is NY+1);
+	 (D == rsouth -> AX is NX, AY is NY-1);
+	 (D == reast -> AX is NX+1, AY is NY);
+	 (D == rwest -> AX is NX-1, AY is NY)),
+	X_diff is AX - WX,
+	Y_diff is AY - WY,
+	((X_diff =:= 2; X_diff =:= -2), Wumpus_count =< 2, hasarrow -> assertz(list_of_actions(turnright)), assertz(list_of_actions(turnright)), assertz(list_of_actions(shoot)), list_of_actions(turnleft), assertz(list_of_actions(turnleft)), true ; true),
+	((Y_diff =:= 2; Y_diff =:= -2), Wumpus_count =< 2, hasarrow -> assertz(list_of_actions(turnright)), assertz(list_of_actions(turnright)), assertz(list_of_actions(shoot)), list_of_actions(turnleft), assertz(list_of_actions(turnleft)), true ; true),
+	((X_diff =:= 0, Y_diff =:= 0), Wumpus_count =< 2, hasarrow -> assertz(list_of_actions(shoot)); true),
+
+	((D == rnorth ; D == rsouth) -> flip_axis_Y(X_diff, Y_diff, Wumpus_count), true; true),
+	((D == reast ; D == rwest) -> flip_axis_X(X_diff, Y_diff, Wumpus_count), true; true).
+
+
+flip_axis_X(X_diff, Y_diff, Wumpus_count):-
+	% turn and shoot wumpus
+	((X_diff  =:= 1, Wumpus_count =< 2, hasarrow) -> (Y_diff =:= 1 -> assertz(list_of_actions(turnright)), true; assertz(list_of_actions(turnleft)), true) ; true),
+	((X_diff  =:= -1, Wumpus_count =< 2, hasarrow) -> (Y_diff =:= 1 -> assertz(list_of_actions(turnleft)), true; assertz(list_of_actions(turnright)), true) ; true),
+	(((X_diff  =:= 1 ; X_diff  =:= -1), Wumpus_count =< 2, hasarrow) -> assertz(list_of_actions(shoot)), true; true),
+	% return to original direction
+	((X_diff  =:= 1, Wumpus_count =< 2, hasarrow) -> (Y_diff =:= 1 -> assertz(list_of_actions(turnleft)), true; assertz(list_of_actions(turnright)), true) ; true),
+	((X_diff  =:= -1, Wumpus_count =< 2, hasarrow)  -> (Y_diff =:= 1 -> assertz(list_of_actions(turnright)), true; assertz(list_of_actions(turnleft)), true) ; true).
+
+
+flip_axis_Y(X_diff, Y_diff, Wumpus_count):-
+	% turn and shoot wumpus
+	((Y_diff  =:= 1, Wumpus_count =< 2, hasarrow) -> (X_diff =:= 1 -> assertz(list_of_actions(turnleft)), true; assertz(list_of_actions(turnright)), true) ; true),
+	((Y_diff  =:= -1, Wumpus_count =< 2, hasarrow)-> (X_diff =:= 1 -> assertz(list_of_actions(turnright)), true; assertz(list_of_actions(turnleft)), true) ; true),
+    (((Y_diff  =:= 1;  Y_diff  =:= -1), Wumpus_count =< 2, hasarrow) -> assertz(list_of_actions(shoot)), true; true),
+	% return to original direction
+	(Y_diff  =:= 1, Wumpus_count =< 2, hasarrow -> (X_diff =:= 1 -> assertz(list_of_actions(turnright)), true; assertz(list_of_actions(turnleft)), true) ; true),
+	(Y_diff  =:= -1, Wumpus_count =< 2, hasarrow -> (X_diff =:= 1 -> assertz(list_of_actions(turnleft)), true; assertz(list_of_actions(turnright)), true) ; true).
 
 
 %plan a path from current to Xd yd (safe location)
