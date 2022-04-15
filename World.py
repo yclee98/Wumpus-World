@@ -296,7 +296,7 @@ class Agent:
                 scream = True
                 self.map.npc.wumpus = None #remove wumpus from npc
                 print("Wumpus killed")
-
+                self.rMap.heardScream()
             else:
                 print("Failed to kill wumpus")
         else:
@@ -335,13 +335,15 @@ class Agent:
 
         #query the knowledge of the agent to update the map
         self.queryAgentKnowledge()
-        self.map.printMap(self.sensory)
+        #self.map.printMap(self.sensory)
         self.rMap.printMap(self.sensory)
 
         self.checkEndGame()
 
     def explore(self):
-        for i in list(prolog.query("explore(L)"))[0]['L']:
+        actions = list(prolog.query("explore(L)"))[0]['L']
+        input()
+        for i in actions:
             a = str(i)
             self.move(a)
 
@@ -593,6 +595,7 @@ class RelativeMap(Map):
         self.innerCell = innerCell
         self.x =0
         self.y=0
+        self.initial_scream_heard = 0
 
         self.map = []
     
@@ -638,7 +641,6 @@ class RelativeMap(Map):
     def updateOrigin(self,x,y):
         self.x=x
         self.y=y
-
 
 
     def printRow(self,x, y, numOfRoom):
@@ -703,24 +705,31 @@ class RelativeMap(Map):
                 continue
             if(bool(list(prolog.query(f"glitter({x1}, {y})")))): print("*", end =" ")
             else: print(".", end =" ")
-            if(bool(list(prolog.query(f"current({x1},{y},D)")))):
+            agent = bool(list(prolog.query(f"current({x1},{y},D)")))
+            if(agent):
                 try:
                     cur = list(prolog.query("current(X,Y,D)"))
                     if(cur[0] == cur[1]): print("B", end=" ")
                     else: print(".", end=" ")
                 except IndexError:
                     print(".", end=" ")
+
+                wumpus_count = len(list(prolog.query("wumpus(X,Y)")))
+                hasarrow = bool(list(prolog.query("hasarrow")))
+                if(agent and hasarrow == False and wumpus_count==0 and self.initial_scream_heard==1):
+                    print("@", end=" ")
+                    self.initial_scream_heard = 0
+                else:
+                    print(".", end=" ")
             else:
                 print(".", end=" ")
-            wumpus_count = len(list(prolog.query("wumpus(X,Y)")))
-            hasarrow = bool(list(prolog.query("hasarrow")))
-            if(hasarrow == False and wumpus_count==0):
-                print("@", end=" ")
-            else:
                 print(".", end=" ")
+
             print("|", end=" ")
         print()
 
+    def heardScream(self):
+        self.initial_scream_heard=1
     
 
 
