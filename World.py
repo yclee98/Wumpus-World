@@ -15,6 +15,7 @@ class Map:
         self.innerCell = innerCell
         self.map = []
         self.npc = None
+        self.agent = None
 
     #create a 3d map of row x columns x innerCell
     #populate outer wall with #
@@ -48,6 +49,20 @@ class Map:
                 self.map[i][0][k]="#"
                 self.map[i][lastcolumn][k]="#"        
 
+    #initialize npc to map variable
+    def initalizeObject(self, npc, agent):
+        self.npc = npc
+        self.agent = agent
+
+    def restartGame(self):
+        self.agent.spawnAgent()
+        #self.npc.spawnNPC(self.agent.x, self.agent.y, self.rows, self.columns)
+        self.npc.intializeNpc()
+        self.spawnNPConMap()
+        self.npc.printNPC()
+        self.printMap()
+
+
     #clear the map of all symbols printout
     def clearMap(self):
         for i in range(1, self.rows-1):
@@ -57,15 +72,10 @@ class Map:
         for i in range(1, self.rows-1):
             for j in range(1, self.columns-1):
                 self.map[i][j][4] = "?"
-        self.spawnNPConMap()
 
     def fillWall(self, x, y):
         for k in range(self.innerCell):
             self.map[y][x][k]="#"
-
-    #initialize npc to map variable
-    def setNpc(self, npc):
-        self.npc = npc
 
     #update cell with to indicate presence of npc 
     def updateCellNpc(self, npcX, npcY, A):
@@ -134,7 +144,6 @@ class Map:
 
     #print the map
     def printMap(self):
-        #self.spawnNPConMap() #before printing the map, update the relevant cell to indicate presence of npc
         innerCellColumn = self.innerCell // 3
         innerCellRow = self.innerCell // 3
         print()
@@ -169,6 +178,11 @@ class NPC:
     def __init__(self):
         #position of npc store as tuple(x, y)
         #access using self.wumpus[0] and self.wumpus[1]
+        self.wumpus = None
+        self.coin = None
+        self.portal = [None, None, None]
+    
+    def intializeNpc(self):
         self.wumpus = (1,3)
         self.coin = (2,3)
         self.portal = [(3,1), (3,3), (4,4)]
@@ -213,12 +227,14 @@ class Agent:
         self.sensory = [1,0,0,0,0,0]
         self.initial_scream_heard = 1
         self.origin = (1,1)
+        self.endGame = False
 
     def start(self):
         while(True):
             self.explore()
 
     def spawnAgent(self):
+        #self.endGame = False
         self.x=1
         self.y=1
         self.orientation="north"
@@ -231,8 +247,6 @@ class Agent:
         self.rMap.updateOrigin(0,0)
         # self.rMap.printMap(self.sensory)
         self.map.spawnAgentOnMap(self.x, self.y, self.orientation)
-        self.map.printMap()
-
         
 
     def moveForward(self):
@@ -259,9 +273,9 @@ class Agent:
             self.y = oldY
             bump = True
         if(bump==False and (self.orientation=='north'or self.orientation=='south')):
-            self.rMap.addrows(2)
+            self.rMap.addrows(2, self.orientation)
         if(bump==False and (self.orientation=='east' or self.orientation=='west')):
-            self.rMap.addcolumns(2)
+            self.rMap.addcolumns(2, self.orientation)
         return bump
     
     def turnLeft(self):
@@ -398,9 +412,10 @@ class Agent:
             print("=================================")
             print("============GAME OVER============")
             print("=================================")
-            quit()
+            # quit()
             self.map.clearMap()
-            self.spawnAgent()
+            self.map.restartGame()
+            self.endGame = True
             return True
 
     #when there is no coin and agent return to origin 
@@ -429,6 +444,10 @@ class RelativeMap(Map):
         self.x =0
         self.y=0
         self.initial_scream_heard = 0
+        self.IX = 0
+        self.IY = 0
+        self.maxX = False
+        self.maxY = False
 
         # self.map = []
     
@@ -462,18 +481,53 @@ class RelativeMap(Map):
         self.rows=value
     def setcolumns(self,value):
         self.columns=value
-    def addrows(self, value):
+
+    def addrows(self, value, direction):
+        if(self.maxY == True): return
+        if(direction == "north"):
+            self.IY = self.IY + 1
+            if(self.IY >= 4): 
+                self.maxY = True
+            if(self.IY<=0 or self.IY>4):
+                return
+        elif(direction == "south"):
+            self.IY = self.IY -1
+            if(self.IY <= -4): 
+                self.maxY = True
+            if(self.IY>=0 or self.IY<-4):
+                return
         self.rows = self.getrows()+ value
-    def addcolumns(self, value):
+
+    def addcolumns(self, value, direction):
+        if(self.maxX == True): 
+            return
+        print(f"col {self.IX}")
+        if(direction == "east"):
+            self.IX = self.IX + 1
+            if(self.IX >= 3): 
+                self.maxX = True
+            if(self.IX<=0 or self.IX>3):
+                return
+        elif(direction == "west"):
+            self.IX = self.IX -1
+            if(self.IX <= -3): 
+                self.maxX = True
+            if(self.IX>=0 or self.IX<-3):
+                return
         self.columns = self.getcolumns()+ value
+
     def enterConfundusPortal(self, newX, newY):
-        self.setrows(3)
-        self.setcolumns(3)
         self.updateOrigin(newX,newY)
 
     def updateOrigin(self,x,y):
+        self.setrows(3)
+        self.setcolumns(3)
         self.x=x
         self.y=y
+        self.IX=0
+        self.IY=0
+        self.maxX = False
+        self.maxY = False
 
 
     def printRow(self,x, y, numOfRoom):

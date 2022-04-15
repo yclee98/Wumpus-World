@@ -13,21 +13,14 @@ def main():
     rMap= RelativeMap(Rrows, Rcolumns, innerCell)
     npc = NPC()
     #store map inside Agent class
-    #agent = Agent(map),
     agent = Agent(map, rMap)
 
     #create map and spawn npc
     map.createMap()
-    #rMap.createMap()
     #store NPC inside map cass
-    map.setNpc(npc)
-    map.spawnNPConMap()
-
-    agent.spawnAgent()
-
-    #if u want random npc location uncomment
-    #npc.spawnNPC(agent.x, agent.y, rows, columns)
-    npc.printNPC()
+    map.initalizeObject(npc, agent)
+    map.restartGame()
+    
     
     move = ""
     print("Exit: 1")
@@ -50,7 +43,8 @@ def main():
         elif(move=="p"):
             agent.move("pickup")
         elif(move=="e"):
-            while(True):
+            agent.endGame=False
+            while(agent.endGame==False):
                 agent.explore()
 
 
