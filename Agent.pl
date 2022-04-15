@@ -203,8 +203,7 @@ retract_confoundus(X,Y):-
     \+((X =:= 0, Y =:=0)),
     retract(confoundus(X, Y)).
 
-retract_confoundus(X,Y):- true.
-
+retract_confoundus(_,_):- true.
 
 update_glitter(0):-
     true.

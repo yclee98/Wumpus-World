@@ -21,20 +21,24 @@ def main():
     #rMap.createMap()
     #store NPC inside map cass
     map.setNpc(npc)
+    map.spawnNPConMap()
 
     agent.spawnAgent()
 
     #if u want random npc location uncomment
     #npc.spawnNPC(agent.x, agent.y, rows, columns)
     npc.printNPC()
-
-    #make agent explore automatically
-    #agent.start()
-    
     
     move = ""
+    print("Exit: 1")
+    print("Forward: f")
+    print("Turn left: l")
+    print("turn right: r")
+    print("Shoot: s")
+    print("Pickup: p")
+    print("Explore: e")
     while(move != "1"):
-        move = input("1 to exit; available input (f l r s p e): ")
+        move = input("Available Inputs : f l r s p e 1): ")
         if(move == "f"):
             agent.move("moveforward")
         elif (move =="l"):
@@ -46,7 +50,8 @@ def main():
         elif(move=="p"):
             agent.move("pickup")
         elif(move=="e"):
-            agent.explore()
+            while(True):
+                agent.explore()
 
 
 if __name__== "__main__":
