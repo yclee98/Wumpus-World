@@ -4,7 +4,6 @@ def main():
     rows = 7
     columns = 6
     innerCell = 9
-
     Rrows=3
     Rcolumns=3
     
@@ -19,7 +18,7 @@ def main():
 
     #create map and spawn npc
     map.createMap()
-    rMap.createMap()
+    #rMap.createMap()
     #store NPC inside map cass
     map.setNpc(npc)
 

@@ -1,4 +1,6 @@
+from contextlib import nullcontext
 import random
+import math
 from pyswip import Prolog
 
 prolog = Prolog()
@@ -216,6 +218,7 @@ class Agent:
         bool(list(prolog.query(f"reposition({self.sensory})")))
         self.queryAgentKnowledge()
         self.map.printMap(self.sensory)
+        self.rMap.updateOrigin(0,0)
         self.rMap.printMap(self.sensory)
         
 
@@ -227,15 +230,11 @@ class Agent:
 
         #depend on orientation move the agent 
         if(self.orientation=='north'): 
-            self.rMap.addrows(1)
-            self.rMap.createMap()
             self.y = self.y + 1
-            print(self.rMap.rows)
 
         elif(self.orientation=='east'): 
             self.x = self.x + 1 
-            self.rMap.addcolumns(1)
-            self.rMap.createMap()
+            
         elif(self.orientation=='south'): self.y = self.y - 1 
         elif(self.orientation=='west'): self.x = self.x - 1 
 
@@ -246,7 +245,10 @@ class Agent:
             self.x = oldX
             self.y = oldY
             bump = True
-
+        if(bump==False and (self.orientation=='north'or self.orientation=='south')):
+            self.rMap.addrows(2)
+        if(bump==False and (self.orientation=='east' or self.orientation=='west')):
+            self.rMap.addcolumns(2)
         return bump
     
     def turnLeft(self):
@@ -368,7 +370,6 @@ class Agent:
         containBoth = confoundus.intersection(wumpus)
         for i in containBoth:
             self.map.map[i[1]][i[0]][4] = 'U'
-            self.rMap.map[i[1]][i[0]][4] = 'U'
 
     def queryPossibleWumpus(self, rx, ry):
         #query agent for wumpus location and use offset to represent in map
@@ -385,7 +386,6 @@ class Agent:
             print(f"({possibleX}, {possibleY})", end = " ")
             #if(possibleX > 0 and possibleX < 5 and possibleY > 0 and possibleY < 6):
             self.map.map[possibleY][possibleX][4] = 'W'
-            self.rMap.map[possibleY][possibleX][4] = 'W'
         print()
         return listOfWumpus
 
@@ -404,7 +404,6 @@ class Agent:
             print(f"({possibleX}, {possibleY})", end = " ")
             #if(possibleX > 0 and possibleX < 5 and possibleY > 0 and possibleY < 6):
             self.map.map[possibleY][possibleX][4] = 'O'
-            self.rMap.map[possibleY][possibleX][4] = 'O'
         print()
         return listOfConfoundus
     
@@ -420,11 +419,8 @@ class Agent:
             print(f"({possibleX}, {possibleY})", end = " ")
             # if(possibleX > 0 and possibleX < 5 and possibleY > 0 and possibleY < 6):
             self.map.map[possibleY][possibleX][3] = '.'
-            self.rMap.map[possibleY][possibleX][3] = '.'
             self.map.map[possibleY][possibleX][5] = '.'
-            self.rMap.map[possibleY][possibleX][5] = '.'
             self.map.map[possibleY][possibleX][4] = 's'
-            self.rMap.map[possibleY][possibleX][4] = 's'
         print()
 
     def queryVisited(self, rx, ry, rd):
@@ -439,11 +435,8 @@ class Agent:
             print(f"({possibleX}, {possibleY})", end = " ")
             # if(possibleX > 0 and possibleX < 5 and possibleY > 0 and possibleY < 6):
             self.map.map[possibleY][possibleX][3] = '.'
-            self.rMap.map[possibleY][possibleX][3] = '.'
             self.map.map[possibleY][possibleX][5] = '.'
-            self.rMap.map[possibleY][possibleX][5] = '.'
             self.map.map[possibleY][possibleX][4] = 'S'
-            self.rMap.map[possibleY][possibleX][4] = 'S'
         print()
     
     def queryWall(self, rx, ry):
@@ -457,59 +450,44 @@ class Agent:
             possibleY = i['Y'] + offsetY
             print(f"({possibleX}, {possibleY})", end = " ")
             self.map.fillWall(possibleX, possibleY)
-            self.rMap.fillWall(possibleX, possibleY)
         print()
 
         
     def updateAgentPosition(self, rd):
         #update cell 3 and 5 of the new cell agent is to '-'
         self.map.map[self.y][self.x][3] = '—'
-        self.rMap.map[self.y][self.x][3] = '—'
         self.map.map[self.y][self.x][5] = '—'
-        self.rMap.map[self.y][self.x][5] = '—'
         #update cell 4 to the relative orientation of the agent
         if(rd=='rnorth'):
             self.map.map[self.y][self.x][4] = '^'
-            self.rMap.map[self.y][self.x][4] = '^'
         elif(rd=='rsouth'):
             self.map.map[self.y][self.x][4] = 'v'
-            self.rMap.map[self.y][self.x][4] = 'v'
         elif(rd=='reast'):
             self.map.map[self.y][self.x][4] = '>'
-            self.rMap.map[self.y][self.x][4] = '>'
         elif(rd=='rwest'):
             self.map.map[self.y][self.x][4] = '<'
-            self.rMap.map[self.y][self.x][4] = '<'
 
     def qeurySensory(self, rx, ry):
         #update confoundus, stench, tingle, glitter 
         #query the sensory information
         if bool(list(prolog.query(f"confoundus({rx},{ry})"))):
             self.map.map[self.y][self.x][0] = '%'
-            self.rMap.map[self.y][self.x][0] = '%'
 
         else:
             self.map.map[self.y][self.x][0] = '.'
-            self.rMap.map[self.y][self.x][0] = '.'
         if bool(list(prolog.query(f"stench({rx},{ry})"))):
             self.map.map[self.y][self.x][1] = '='
-            self.rMap.map[self.y][self.x][1] = '='
         else:
             self.map.map[self.y][self.x][1] = '.'
-            self.rMap.map[self.y][self.x][1] = '.'
         if bool(list(prolog.query(f"tingle({rx},{ry})"))):
             self.map.map[self.y][self.x][2] = 'T'
-            self.rMap.map[self.y][self.x][2] = 'T'
 
         else:
             self.map.map[self.y][self.x][2] = '.'
-            self.rMap.map[self.y][self.x][2] = '.'
         if bool(list(prolog.query(f"glitter({rx},{ry})"))):
             self.map.map[self.y][self.x][6] = '*'
-            self.rMap.map[self.y][self.x][6] = '*'
         else:
             self.map.map[self.y][self.x][6] = '.'
-            self.rMap.map[self.y][self.x][6] = '.'
 
         #update bump
         #query if the first and second current is the same it means it did not move so a bump
@@ -518,10 +496,8 @@ class Agent:
             previousPosition = list(prolog.query("current(X,Y,D)"))[1]
             if(newPosition == previousPosition): 
                 self.map.map[self.y][self.x][7] = 'B'
-                self.rMap.map[self.y][self.x][7] = 'B'
             else:
                 self.map.map[self.y][self.x][7] = '.'
-                self.rMap.map[self.y][self.x][7] = '.'
         except IndexError:
             #no previous position; at the start of the game 
             pass
@@ -531,11 +507,9 @@ class Agent:
         hasarrow = bool(list(prolog.query("hasarrow")))
         if(hasarrow == False and wumpus_count==0 and self.initial_scream_heard == 1):
             self.map.map[self.y][self.x][8] = '@'
-            self.rMap.map[self.y][self.x][8] = '@'
             self.initial_scream_heard = 0
         else:
             self.map.map[self.y][self.x][8] = '.'
-            self.rMap.map[self.y][self.x][8] = '.'
 
         
 
@@ -577,7 +551,7 @@ class Agent:
                 self.x=newX
                 self.y=newY
                 self.orientation="north"
-                self.rMap.map[1][1][4] = '^'
+                self.rMap.enterConfundusPortal(0,0)
                 #self.updateAgentPosition('rnorth')
                 #self.map.printMap(self.sensory)
         # reflect on the map
@@ -610,32 +584,37 @@ class Agent:
             return True
         else:
             return False
+
         
 class RelativeMap(Map):
     def __init__(self,rows,columns,innerCell):
         self.rows = rows
         self.columns = columns
         self.innerCell = innerCell
+        self.x =0
+        self.y=0
+
         self.map = []
     
     def printMap(self, sensory):
         #self.spawnNPConMap() #before printing the map, update the relevant cell to indicate presence of npc
-        innerCellColumn = self.innerCell // 3
-        innerCellRow = self.innerCell // 3
-        print("========= RELATIVE MAP==========")
-       #print("-------------------------------------------------")
-        for i in range(self.rows-1, -1, -1): #to display such that lower row is at the bottom of map
-            for j in range(innerCellRow):
-                print("|", end="")
-                for k in range(self.columns):
-                    print(" ", end="")
-                    for l in range(innerCellColumn):
-                        print(self.map[i][k][j*innerCellRow+l]+" ", end = "")
-                    print("||", end="")
-                print()
-            #print("-------------------------------------------------")
-        self.printSensory(sensory)
+        #print("this is x origin", self.x)
+        #print("this is y origin", self.y)
+        xmodifier= math.floor(self.columns/2)
+        #print ("this is xmodifier", xmodifier)
+        startingX= self.x - xmodifier
+       # print("this is starting x",startingX) #starting from most left
+        ymodifier=math.floor(self.rows/2)
+        #print("this is ymodifier", ymodifier) 
+        startingY=self.y+ymodifier#starting for the top
+       # print("this is starting y",startingY)
+       # print("in loop")
+        for i in range (self.rows):
+            #print("this is x", startingX, "this is y", startingY)
+            self.printRow(startingX,startingY,self.columns)
+            startingY=startingY-1
 
+        self.printSensory(sensory)
 
     def getrows(self):
         return self.rows
@@ -643,13 +622,104 @@ class RelativeMap(Map):
     def getcolumns(self):
         return self.columns
 
+    def setrows(self,value):
+        self.rows=value
+    def setcolumns(self,value):
+        self.columns=value
     def addrows(self, value):
-        if(self.rows<=6):
-            self.rows = self.getrows()+ value
-
+        self.rows = self.getrows()+ value
     def addcolumns(self, value):
-        if(self.columns<=5):
-            self.columns = self.getcolumns()+ value
+        self.columns = self.getcolumns()+ value
+    def enterConfundusPortal(self, newX, newY):
+        self.setrows(3)
+        self.setcolumns(3)
+        self.updateOrigin(newX,newY)
+
+    def updateOrigin(self,x,y):
+        self.x=x
+        self.y=y
+
+
+
+    def printRow(self,x, y, numOfRoom):
+        print("|", end=" ")
+        #query first row of symbols
+        for k in range(numOfRoom):
+            x1 = x + k
+            if(bool(list(prolog.query(f"wall({x1}, {y})")))): 
+                print("# # #", end=" ")
+                print("|", end=" ")
+                continue
+            if(bool(list(prolog.query(f"confoundus({x1}, {y})"))) and bool(list(prolog.query(f"visited({x1}, {y})")))): print("%", end =" ")
+            else: print(".", end =" ")
+            if(bool(list(prolog.query(f"stench({x1}, {y})")))): print("=", end =" ")
+            else: print(".", end =" ")
+            if(bool(list(prolog.query(f"tingle({x1}, {y})")))): print("T", end =" ")
+            else:
+                print(".", end =" ")
+            print("|", end=" ")
+        print()
+
+        #query second row of symbols
+        print("|", end=" ")
+        for k in range(numOfRoom):
+            x1 = x + k
+            if(bool(list(prolog.query(f"wall({x1}, {y})")))): 
+                print("# # #", end=" ")
+                print("|", end=" ")
+                
+                continue
+            wumpus = bool(list(prolog.query(f"wumpus({x1},{y})")))
+            confoundus = bool(list(prolog.query(f"confoundus({x1},{y})"))) and not(x1==0 and y==0)
+            agent = list(prolog.query(f"current({x1},{y},D)"))
+            if(wumpus or confoundus or bool(agent)):
+                print("—", end =" ")
+                if(bool(agent)):
+                    d = agent[0]['D']
+                    if(d == "rnorth"): print("^", end=" ")
+                    elif(d == "reast"): print(">", end=" ")
+                    elif(d == "rsouth"): print("V", end=" ")
+                    elif(d == "rwest"): print("<", end=" ")
+                elif(wumpus and confoundus): print("U", end =" ")
+                elif(wumpus): print("W", end =" ")
+                elif(confoundus):print("O", end =" ")
+                print("—", end =" ")
+            else:
+                print(".", end =" ")
+                if(bool(list(prolog.query(f"visited({x1},{y})")))): print("S", end =" ") 
+                elif(bool(list(prolog.query(f"safe({x1},{y})")))): print("s", end =" ")
+                else: print("?", end =" ")  
+                print(".", end =" ")
+            print("|", end=" ")
+        print()
+
+        #query third row of symbols
+        print("|", end=" ")
+        for k in range(numOfRoom):
+            x1 = x + k
+            if(bool(list(prolog.query(f"wall({x1}, {y})")))): 
+                print("# # #", end=" ")
+                print("|", end=" ")
+                continue
+            if(bool(list(prolog.query(f"glitter({x1}, {y})")))): print("*", end =" ")
+            else: print(".", end =" ")
+            if(bool(list(prolog.query(f"current({x1},{y},D)")))):
+                try:
+                    cur = list(prolog.query("current(X,Y,D)"))
+                    if(cur[0] == cur[1]): print("B", end=" ")
+                    else: print(".", end=" ")
+                except IndexError:
+                    print(".", end=" ")
+            else:
+                print(".", end=" ")
+            wumpus_count = len(list(prolog.query("wumpus(X,Y)")))
+            hasarrow = bool(list(prolog.query("hasarrow")))
+            if(hasarrow == False and wumpus_count==0):
+                print("@", end=" ")
+            else:
+                print(".", end=" ")
+            print("|", end=" ")
+        print()
 
     
 

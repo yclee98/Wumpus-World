@@ -112,6 +112,7 @@ update_action(turnright):-
 
 update_action(moveforward):-
     once(current(X, Y, D)),
+    retractall(current(_,_,_)),
 
     Z1 is Y + 1,
     Z2 is Y - 1,
