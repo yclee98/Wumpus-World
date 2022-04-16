@@ -56,11 +56,10 @@ class Map:
 
     def restartGame(self):
         self.agent.spawnAgent()
-        #self.npc.spawnNPC(self.agent.x, self.agent.y, self.rows, self.columns)
-        self.npc.intializeNpc()
+        self.npc.spawnNpc()
         self.spawnNPConMap()
-        self.npc.printNPC()
         self.printMap()
+        self.agent.rMap.updateOrigin(0,0)
         self.agent.rMap.printMap(self.agent.sensory)
 
 
@@ -90,7 +89,8 @@ class Map:
         if(self.npc.wumpus!=None):
             self.updateCellNpc(self.npc.wumpus[0], self.npc.wumpus[1], "W")
         if(self.npc.coin!=None):
-            self.updateCellNpc(self.npc.coin[0], self.npc.coin[1], "C")
+            #self.updateCellNpc(self.npc.coin[0], self.npc.coin[1], "C")
+            self.map[self.npc.coin[1]][self.npc.coin[0]][6] = "*"
         self.updateCellNpc(self.npc.portal[0][0], self.npc.portal[0][1], "O")
         self.updateCellNpc(self.npc.portal[1][0], self.npc.portal[1][1], "O")
         self.updateCellNpc(self.npc.portal[2][0], self.npc.portal[2][1], "O")
@@ -183,36 +183,11 @@ class NPC:
         self.coin = None
         self.portal = [None, None, None]
     
-    def intializeNpc(self):
+    def spawnNpc(self):
         self.wumpus = (1,3)
         self.coin = (2,3)
         self.portal = [(3,1), (3,3), (4,4)]
         
-    #spawn the npc location randomly 
-    def spawnNPC(self, agentX, agentY, rows, columns):
-        #x y should not be repeated, use a set to prevent repeation of coordinates
-        coordinates = set()
-        coordinates.add((agentX, agentY)) #add agent position to set so that it will not be repeated
-        
-        while(len(coordinates) != 6):
-            x=random.randint(1,columns-2) # X correspond to columns
-            y=random.randint(1,rows-2) # Y correspond to row
-            coordinates.add((x,y))
-        coordinates.remove((agentX, agentY)) #remove agent postion from set so that it will not be assigned to npc
-
-        self.wumpus = coordinates.pop()
-        self.coin = coordinates.pop()
-        self.portal[0] = coordinates.pop()
-        self.portal[1] = coordinates.pop()
-        self.portal[2] = coordinates.pop()
-    
-    def printNPC(self):
-        print(f"Wumpus: {self.wumpus}", end=", ")
-        print(f"Coin: {self.coin}", end=", ")
-        print(f"Portal1: {self.portal[0]}", end=", ")
-        print(f"Portal2: {self.portal[1]}", end=", ")
-        print(f"Portal3: {self.portal[2]}")
-
 
 class Agent:
     def __init__(self, map, RelativeMap):
@@ -241,7 +216,6 @@ class Agent:
         self.sensory[0] = "on"
         bool(list(prolog.query("reborn()")))
         bool(list(prolog.query(f"reposition({self.sensory})")))
-        self.rMap.updateOrigin(0,0)
         self.map.spawnAgentOnMap(self.x, self.y, self.orientation)
         
 
@@ -375,7 +349,7 @@ class Agent:
 
     def enterconfundusPortal(self):
         print("===================================")
-        print("===========ENTERed PORTAL==========")
+        print("===========ENTERED PORTAL==========")
         print("===================================")
         listofNPC = set() # get list of npcs
         typeCoin = type(self.map.npc.coin) is tuple # checking if there is more than 1 coin
@@ -629,7 +603,6 @@ def main():
     map = Map(rows, columns, innerCell)
     rMap= RelativeMap(Rrows, Rcolumns, innerCell)
     npc = NPC()
-    #store map inside Agent class
     agent = Agent(map, rMap)
 
     #create map and spawn npc
