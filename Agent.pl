@@ -148,16 +148,16 @@ update_action(pickup):-
     retractall(glitter(_,_)).
 
 % to update confoundus indicator
-update_confounded(0):-
+update_confounded(off):-
     true.
 
-update_confounded(1):-
+update_confounded(on):-
     once(current(X,Y,_)),
     (\+confoundus(X,Y)
         -> asserta(confoundus(X, Y))
         ; true).
 
-update_stench(0):-
+update_stench(off):-
     once(current(X,Y,_)),
 
     % if stench is not perceived, wumpus cannot be in adj rooms
@@ -168,7 +168,7 @@ update_stench(0):-
     Z4 is X - 1, (retract(wumpus(Z4, Y)) ->true; true).
 
 
-update_stench(1):-
+update_stench(on):-
     once(current(X,Y,_)),
     asserta(stench(X,Y)),
 
@@ -179,7 +179,7 @@ update_stench(1):-
     Z4 is X - 1, (determine_wumpus(Z4, Y) ->true; true).
 
 
-update_tingle(0):-
+update_tingle(off):-
     once(current(X,Y,_)),
     Z1 is Y + 1, (retract_confoundus(X,Z1)),
     Z2 is Y - 1, (retract_confoundus(X,Z2)),
@@ -188,7 +188,7 @@ update_tingle(0):-
 
 
 % if perceived tingle, update KB that portal MAY be in one of the adj rooms
-update_tingle(1):-
+update_tingle(on):-
     once(current(X,Y,_)),
     asserta(tingle(X,Y)),
 
@@ -205,20 +205,20 @@ retract_confoundus(X,Y):-
 
 retract_confoundus(_,_):- true.
 
-update_glitter(0):-
+update_glitter(off):-
     true.
 
 % if percieve glitter, cell is inhabited by coin
-update_glitter(1):-
+update_glitter(on):-
     once(current(X,Y,_)),
     asserta(glitter(X,Y)).
 
-update_bump(0):- true.
+update_bump(off):- true.
 
 %assert current position to be the same to indicate a bump resulting in being same room
 %remove the room from safe as it is not accessible
 %return false when there is bump
-update_bump(1):-
+update_bump(on):-
     once(current(X, Y, D)),
     asserta(current(X,Y,D)),
 
@@ -241,10 +241,10 @@ update_bump(X,Y):-
     (retract(safe(X,Y))->true; true),
     asserta(wall(X,Y)).
 
-update_scream(0):-
+update_scream(off):-
     true.
 
-update_scream(1):-
+update_scream(on):-
     retractall(wumpus_alive()),
     retractall(wumpus(_,_)),
     retractall(stench(_,_)).
