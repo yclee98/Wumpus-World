@@ -3,7 +3,7 @@
     current/3,
     visited/2,
     wumpus/2,
-    confoundus/2,
+    confundus/2,
     tingle/2,
     glitter/2,
     stench/2,
@@ -26,7 +26,7 @@ reborn():-
     retractall(current(_, _, _)),
     retractall(visited(_, _)),
     retractall(wumpus(_, _)),
-    retractall(confoundus(_, _)),
+    retractall(confundus(_, _)),
     retractall(tingle(_, _)),
     retractall(glitter(_, _)),
     retractall(stench(_, _)),
@@ -58,7 +58,7 @@ reposition([Confounded, Stench, Tingle, _, _, _]):-
     retractall(current(_, _, _)),
     retractall(visited(_, _)),
     retractall(wumpus(_, _)),
-    retractall(confoundus(_, _)),
+    retractall(confundus(_, _)),
     retractall(tingle(_, _)),
     retractall(glitter(_, _)),
     retractall(stench(_, _)),
@@ -125,7 +125,7 @@ update_action(moveforward):-
     D == rwest -> asserta(current(Z4, Y, D))),
 
     %get new current to update visited
-    %retract safe, wumpus and confoundus, since visited they not possible be there
+    %retract safe, wumpus and confundus, since visited they not possible be there
     once(current(X1,Y1,_)),
 
     %keep track of latest visited at the top, 
@@ -134,8 +134,8 @@ update_action(moveforward):-
     asserta(visited(X1,Y1)),
 
     (retract(wumpus(X1,Y1))->true; true),
-    %(retract(confoundus(X1,Y1))->true; true),
-    retract_confoundus(X1, Y1),
+    %(retract(confundus(X1,Y1))->true; true),
+    retract_confundus(X1, Y1),
     (retract(safe(X1,Y1))->true; true).
 
 update_action(shoot):-
@@ -147,14 +147,14 @@ update_action(pickup):-
     retractall(has_gold),
     retractall(glitter(_,_)).
 
-% to update confoundus indicator
+% to update confundus indicator
 update_confounded(off):-
     true.
 
 update_confounded(on):-
     once(current(X,Y,_)),
-    (\+confoundus(X,Y)
-        -> asserta(confoundus(X, Y))
+    (\+confundus(X,Y)
+        -> asserta(confundus(X, Y))
         ; true).
 
 update_stench(off):-
@@ -181,10 +181,10 @@ update_stench(on):-
 
 update_tingle(off):-
     once(current(X,Y,_)),
-    Z1 is Y + 1, (retract_confoundus(X,Z1)),
-    Z2 is Y - 1, (retract_confoundus(X,Z2)),
-    Z3 is X + 1, (retract_confoundus(Z3,Y)),
-    Z4 is X - 1, (retract_confoundus(Z4,Y)).
+    Z1 is Y + 1, (retract_confundus(X,Z1)),
+    Z2 is Y - 1, (retract_confundus(X,Z2)),
+    Z3 is X + 1, (retract_confundus(Z3,Y)),
+    Z4 is X - 1, (retract_confundus(Z4,Y)).
 
 
 % if perceived tingle, update KB that portal MAY be in one of the adj rooms
@@ -193,17 +193,17 @@ update_tingle(on):-
     asserta(tingle(X,Y)),
 
     % if tingle is perceived, portal MAY be in adj rooms
-    Z1 is Y + 1, (determine_confoundus(X, Z1) ->true; true),
-    Z2 is Y - 1, (determine_confoundus(X, Z2) ->true; true),
-    Z3 is X + 1, (determine_confoundus(Z3, Y) ->true; true),
-    Z4 is X - 1, (determine_confoundus(Z4, Y) ->true; true).
+    Z1 is Y + 1, (determine_confundus(X, Z1) ->true; true),
+    Z2 is Y - 1, (determine_confundus(X, Z2) ->true; true),
+    Z3 is X + 1, (determine_confundus(Z3, Y) ->true; true),
+    Z4 is X - 1, (determine_confundus(Z4, Y) ->true; true).
 
-% dont retract the confoundus at 0,0 so that the origin always have a confoundus indicator on
-retract_confoundus(X,Y):-
+% dont retract the confundus at 0,0 so that the origin always have a confundus indicator on
+retract_confundus(X,Y):-
     \+((X =:= 0, Y =:=0)),
-    retract(confoundus(X, Y)).
+    retract(confundus(X, Y)).
 
-retract_confoundus(_,_):- true.
+retract_confundus(_,_):- true.
 
 update_glitter(off):-
     true.
@@ -234,10 +234,10 @@ update_bump(on):-
     false. 
 
 update_bump(X,Y):-
-    %there cannot be wumpus, confoundus and safe if experience bump infront
+    %there cannot be wumpus, confundus and safe if experience bump infront
     %assert a wall 
     (retract(wumpus(X,Y))->true; true),
-    (retract(confoundus(X,Y))->true; true),
+    (retract(confundus(X,Y))->true; true),
     (retract(safe(X,Y))->true; true),
     asserta(wall(X,Y)).
 
@@ -259,10 +259,10 @@ update_safe():-
     Z4 is X - 1, (determine_safe(Z4, Y) ->true; true).
 
 determine_safe(X,Y):-
-    %cell is safe if it there is no possible wumpus and confoundus and not visited
+    %cell is safe if it there is no possible wumpus and confundus and not visited
     \+visited(X,Y),
     \+wumpus(X,Y),
-    \+confoundus(X,Y),
+    \+confundus(X,Y),
     \+wall(X,Y),
     (\+safe(X,Y)
         -> asserta(safe(X,Y))
@@ -312,12 +312,12 @@ check_wumpus_adj_rm_stench(X,Y):-
     (( Z3 =\= A, visited(Z3, Y), stench(Z3, Y), \+wumpus(X,Y)) -> asserta(wumpus(X,Y)), false ; true),
     (( Z4 =\= A, visited(Z4, Y), stench(Z4, Y), \+wumpus(X,Y)) -> asserta(wumpus(X,Y)), false ; true).
 
-determine_confoundus(X,Y):-
-    % confoundus cannot be in a cell that has been visited or mark as safe
+determine_confundus(X,Y):-
+    % confundus cannot be in a cell that has been visited or mark as safe
     \+visited(X,Y),
     \+safe(X,Y),
 
-    (\+confoundus(X,Y) -> check_portal_adj_rm_tingle(X, Y), true ; true).
+    (\+confundus(X,Y) -> check_portal_adj_rm_tingle(X, Y), true ; true).
 
 check_portal_adj_rm_tingle(X,Y):-
     once(current(A, B, _)),
@@ -328,26 +328,26 @@ check_portal_adj_rm_tingle(X,Y):-
     Z4 is X - 1,
 
     % DO NOT COMPARE WITH LATEST CURRENT POSITION!!!
-    % main room: room that is being considered to be marked with suspected confoundus portal.
+    % main room: room that is being considered to be marked with suspected confundus portal.
     % adj room: rooms adjacent to the main room
 
-    % if adj room not visited, and main room confoundus(X,Y) = false(avoid dups) -> mark main room with confoundus, continue comparison.
-    (( Z1 =\= B, \+visited(X, Z1), \+confoundus(X,Y)) -> asserta(confoundus(X, Y)) ; true),
-    (( Z2 =\= B, \+visited(X, Z2), \+confoundus(X,Y)) -> asserta(confoundus(X, Y)) ; true),
-    (( Z3 =\= A, \+visited(Z3, Y), \+confoundus(X,Y)) -> asserta(confoundus(X, Y)) ; true),
-    (( Z4 =\= A, \+visited(Z4, Y), \+confoundus(X,Y)) -> asserta(confoundus(X, Y)) ; true),
+    % if adj room not visited, and main room confundus(X,Y) = false(avoid dups) -> mark main room with confundus, continue comparison.
+    (( Z1 =\= B, \+visited(X, Z1), \+confundus(X,Y)) -> asserta(confundus(X, Y)) ; true),
+    (( Z2 =\= B, \+visited(X, Z2), \+confundus(X,Y)) -> asserta(confundus(X, Y)) ; true),
+    (( Z3 =\= A, \+visited(Z3, Y), \+confundus(X,Y)) -> asserta(confundus(X, Y)) ; true),
+    (( Z4 =\= A, \+visited(Z4, Y), \+confundus(X,Y)) -> asserta(confundus(X, Y)) ; true),
 
-    % if adj room is visited & no tingle -> main room has no confoundus(retract).
-    (( Z1 =\= B, visited(X, Z1), \+tingle(x, Z1)) -> retract(confoundus(X,Y)), true ; true),
-    (( Z2 =\= B, visited(X, Z2), \+tingle(x, Z2)) -> retract(confoundus(X,Y)), true ; true),
-    (( Z3 =\= A, visited(Z3, Y), \+tingle(Z3, Y)) -> retract(confoundus(X,Y)), true ; true),
-    (( Z4 =\= A, visited(Z4, Y), \+tingle(Z4, Y)) -> retract(confoundus(X,Y)), true ; true),
+    % if adj room is visited & no tingle -> main room has no confundus(retract).
+    (( Z1 =\= B, visited(X, Z1), \+tingle(x, Z1)) -> retract(confundus(X,Y)), true ; true),
+    (( Z2 =\= B, visited(X, Z2), \+tingle(x, Z2)) -> retract(confundus(X,Y)), true ; true),
+    (( Z3 =\= A, visited(Z3, Y), \+tingle(Z3, Y)) -> retract(confundus(X,Y)), true ; true),
+    (( Z4 =\= A, visited(Z4, Y), \+tingle(Z4, Y)) -> retract(confundus(X,Y)), true ; true),
 
-    % if adj room is visited, has tingle & main room confoundus(X,Y) = false(avoid dups) -> mark main room with confoundus.
-    (( Z1 =\= B, visited(X, Z1), tingle(x, Z1), \+confoundus(X,Y)) -> asserta(confoundus(X,Y)), true ; true),
-    (( Z2 =\= B, visited(X, Z2), tingle(x, Z2), \+confoundus(X,Y)) -> asserta(confoundus(X,Y)), true ; true),
-    (( Z3 =\= A, visited(Z3, Y), tingle(Z3, Y), \+confoundus(X,Y)) -> asserta(confoundus(X,Y)), true ; true),
-    (( Z4 =\= A, visited(Z4, Y), tingle(Z4, Y), \+confoundus(X,Y)) -> asserta(confoundus(X,Y)), true ; true).
+    % if adj room is visited, has tingle & main room confundus(X,Y) = false(avoid dups) -> mark main room with confundus.
+    (( Z1 =\= B, visited(X, Z1), tingle(x, Z1), \+confundus(X,Y)) -> asserta(confundus(X,Y)), true ; true),
+    (( Z2 =\= B, visited(X, Z2), tingle(x, Z2), \+confundus(X,Y)) -> asserta(confundus(X,Y)), true ; true),
+    (( Z3 =\= A, visited(Z3, Y), tingle(Z3, Y), \+confundus(X,Y)) -> asserta(confundus(X,Y)), true ; true),
+    (( Z4 =\= A, visited(Z4, Y), tingle(Z4, Y), \+confundus(X,Y)) -> asserta(confundus(X,Y)), true ; true).
 
 
 %when there is coin to pickup then go to that location to pickup
@@ -387,15 +387,15 @@ explore(L):-
     write("explore safe"),nl,
     !.
 
-%when there is no safe location but there is still gold left then go to confoundus portal
+%when there is no safe location but there is still gold left then go to confundus portal
 explore(L):-
-    confoundus(X,Y),
+    confundus(X,Y),
     \+visited(X,Y),
     has_gold(),
     find_path_start(X, Y),
     determine_start_action(),
     findall(A, list_of_actions(A), L),
-    write("explore confoundus"),nl,
+    write("explore confundus"),nl,
     !.
 
 %if there is no safe location then go back to origin 0,0

@@ -108,23 +108,23 @@ class Map:
     def perceiveSensory(self, agentPosition, bump=False, scream=False):
         #agentPosition in (x, y)
         #confounded, stench, tingle, glitter, bump, scream
-        sensory = [0, 0, 0, 0, 0, 0] #intialize all sensory to off
+        sensory = ["off", "off", "off", "off", "off", "off"] #intialize all sensory to off
 
         #confounded indicator; agent in the same cell as a confundus
         if(agentPosition in self.npc.portal):
-            sensory[0] = 1
+            sensory[0] = "on"
 
         #glitter indicator; agent in same cell as coin
         if(agentPosition == self.npc.coin):
-            sensory[3] = 1
+            sensory[3] = "on"
         
         #bump indicator
         if(bump):
-            sensory[4] = 1
+            sensory[4] = "on"
         
         #scream indicator
         if(scream):
-            sensory[5] = 1
+            sensory[5] = "on"
         
         #get the up down left right cell of the position agent is in 
         up = (agentPosition[0], agentPosition[1]+1)
@@ -134,11 +134,11 @@ class Map:
 
         #stench indicator; cell next to one inhibited by wumpus
         if(up==self.npc.wumpus or down==self.npc.wumpus or left==self.npc.wumpus or right==self.npc.wumpus):
-            sensory[1] = 1        
+            sensory[1] = "on"        
 
         #tingle indicator; cell next to one inhibited by confundus 
         if(up in self.npc.portal or down in self.npc.portal or left in self.npc.portal or right in self.npc.portal):
-            sensory[2] = 1
+            sensory[2] = "on"
         
         return sensory
         
@@ -167,7 +167,7 @@ class Map:
         fullName = ["Confounded", "Stench", "Tingle", "Glitter", "Bump", "Scream"]
         output = ""
         for i in range(len(sensory)):
-            if(sensory[i] == 1): #indicator is on
+            if(sensory[i] == "on"): #indicator is on
                 output = output + fullName[i] + "—"
             else: #indicator is off
                 output = output + fullName[i][0] + "—"
@@ -225,7 +225,7 @@ class Agent:
         #sensory = confounded, stench, tingle, glitter, bump, scream
         #0 for off, 1 for on
         #confounded on at start of the game 
-        self.sensory = [1,0,0,0,0,0]
+        self.sensory = ["on", "off","off","off", "off", "off"]
         self.initial_scream_heard = 1
         self.origin = (1,1)
         self.endGame = False
@@ -238,7 +238,7 @@ class Agent:
         self.origin = (1,1)
         self.initial_scream_heard = 1
         self.sensory = self.map.perceiveSensory((self.x, self.y))
-        self.sensory[0] = 1
+        self.sensory[0] = "on"
         bool(list(prolog.query("reborn()")))
         bool(list(prolog.query(f"reposition({self.sensory})")))
         self.rMap.updateOrigin(0,0)
@@ -347,12 +347,12 @@ class Agent:
 
         bool(list(prolog.query(f"move({action},{self.sensory})")))
 
-        #when stepping into confoundus portal, relocate agent, clear the map, perceive new sensory and update agent
-        if(self.sensory[0]==1):
+        #when stepping into confundus portal, relocate agent, clear the map, perceive new sensory and update agent
+        if(self.sensory[0]=="on"):
             self.enterConfundusPortal()
             # self.map.clearMap()
             self.sensory = self.map.perceiveSensory((self.x, self.y))
-            self.sensory[0] = 1 #mark confoundus indicator as on
+            self.sensory[0] = "on" #mark confundus indicator as on
             bool(list(prolog.query(f"reposition({self.sensory})")))
             
         self.rMap.printMap(self.sensory)
@@ -373,7 +373,7 @@ class Agent:
             self.move(a)
        
 
-    def enterConfundusPortal(self):
+    def enterconfundusPortal(self):
         print("===================================")
         print("===========ENTERed PORTAL==========")
         print("===================================")
@@ -403,8 +403,9 @@ class Agent:
                 self.y=newY
                 self.orientation="north"
                 self.origin = (newX, newY)
-                self.rMap.enterConfundusPortal(0,0)
+                self.rMap.enterconfundusPortal(0,0)
                 self.map.clearMap()
+                self.map.spawnNPConMap()
                 self.map.spawnAgentOnMap(self.x, self.y, self.orientation)
                 self.map.printMap()
         # reflect on the map
@@ -511,7 +512,7 @@ class RelativeMap(Map):
                 return
         self.columns = self.getcolumns()+ value
 
-    def enterConfundusPortal(self, newX, newY):
+    def enterconfundusPortal(self, newX, newY):
         self.updateOrigin(newX,newY)
 
     def updateOrigin(self,x,y):
@@ -534,7 +535,7 @@ class RelativeMap(Map):
                 print("# # #", end=" ")
                 print("|", end=" ")
                 continue
-            if(bool(list(prolog.query(f"confoundus({x1}, {y})"))) and bool(list(prolog.query(f"visited({x1}, {y})")))): print("%", end =" ")
+            if(bool(list(prolog.query(f"confundus({x1}, {y})"))) and bool(list(prolog.query(f"visited({x1}, {y})")))): print("%", end =" ")
             else: print(".", end =" ")
             if(bool(list(prolog.query(f"stench({x1}, {y})")))): print("=", end =" ")
             else: print(".", end =" ")
@@ -554,9 +555,9 @@ class RelativeMap(Map):
                 
                 continue
             wumpus = bool(list(prolog.query(f"wumpus({x1},{y})")))
-            confoundus = bool(list(prolog.query(f"confoundus({x1},{y})"))) and not(x1==0 and y==0)
+            confundus = bool(list(prolog.query(f"confundus({x1},{y})"))) and not(x1==0 and y==0)
             agent = list(prolog.query(f"current({x1},{y},D)"))
-            if(wumpus or confoundus or bool(agent)):
+            if(wumpus or confundus or bool(agent)):
                 print("—", end =" ")
                 if(bool(agent)):
                     d = agent[0]['D']
@@ -564,9 +565,9 @@ class RelativeMap(Map):
                     elif(d == "reast"): print(">", end=" ")
                     elif(d == "rsouth"): print("V", end=" ")
                     elif(d == "rwest"): print("<", end=" ")
-                elif(wumpus and confoundus): print("U", end =" ")
+                elif(wumpus and confundus): print("U", end =" ")
                 elif(wumpus): print("W", end =" ")
-                elif(confoundus):print("O", end =" ")
+                elif(confundus):print("O", end =" ")
                 print("—", end =" ")
             else:
                 print(".", end =" ")
