@@ -61,6 +61,7 @@ class Map:
         self.spawnNPConMap()
         self.npc.printNPC()
         self.printMap()
+        self.agent.rMap.printMap(self.agent.sensory)
 
 
     #clear the map of all symbols printout
@@ -229,10 +230,6 @@ class Agent:
         self.origin = (1,1)
         self.endGame = False
 
-    def start(self):
-        while(True):
-            self.explore()
-
     def spawnAgent(self):
         #self.endGame = False
         self.x=1
@@ -245,7 +242,6 @@ class Agent:
         bool(list(prolog.query("reborn()")))
         bool(list(prolog.query(f"reposition({self.sensory})")))
         self.rMap.updateOrigin(0,0)
-        # self.rMap.printMap(self.sensory)
         self.map.spawnAgentOnMap(self.x, self.y, self.orientation)
         
 
@@ -365,14 +361,22 @@ class Agent:
 
     def explore(self):
         actions = list(prolog.query("explore(L)"))[0]['L']
-        input()
+        input("Enter to continue")
+        for i in actions:
+            a = str(i)
+            self.move(a)
+    
+    def autoExplore(self):
+        actions = list(prolog.query("explore(L)"))[0]['L']
         for i in actions:
             a = str(i)
             self.move(a)
        
 
     def enterConfundusPortal(self):
-        print("standing on portal")
+        print("===================================")
+        print("===========ENTERed PORTAL==========")
+        print("===================================")
         listofNPC = set() # get list of npcs
         typeCoin = type(self.map.npc.coin) is tuple # checking if there is more than 1 coin
 
@@ -452,20 +456,11 @@ class RelativeMap(Map):
         # self.map = []
     
     def printMap(self, sensory):
-        #self.spawnNPConMap() #before printing the map, update the relevant cell to indicate presence of npc
-        #print("this is x origin", self.x)
-        #print("this is y origin", self.y)
         xmodifier= math.floor(self.columns/2)
-        #print ("this is xmodifier", xmodifier)
         startingX= self.x - xmodifier
-       # print("this is starting x",startingX) #starting from most left
         ymodifier=math.floor(self.rows/2)
-        #print("this is ymodifier", ymodifier) 
         startingY=self.y+ymodifier#starting for the top
-       # print("this is starting y",startingY)
-       # print("in loop")
         for i in range (self.rows):
-            #print("this is x", startingX, "this is y", startingY)
             self.printRow(startingX,startingY,self.columns)
             startingY=startingY-1
 
@@ -618,174 +613,3 @@ class RelativeMap(Map):
     def heardScream(self):
         self.initial_scream_heard=1
     
-
-
-        
-
-    # def queryAgentKnowledge(self):
-    #     #get relative postion
-    #     current = list(prolog.query("current(X,Y,D)"))[0]
-    #     rx = current['X']
-    #     ry = current['Y']
-    #     rd = current['D']
-    #     print(f"agent relative {rx} {ry} {rd}")
-    #     print(f"agent absolute {self.x} {self.y} {self.orientation}")
-
-    #     self.querySafeUnvisited(rx, ry)
-    #     listOfConfoundus = self.queryPossibleConfoundus(rx, ry)
-    #     listOfWumpus = self.queryPossibleWumpus(rx, ry)
-    #     self.checkConfoundusWumpus(listOfConfoundus, listOfWumpus)
-
-    #     self.queryWall(rx, ry)
-    #     self.qeurySensory(rx, ry)
-    #     self.queryVisited(rx, ry, rd)
-    #     self.updateAgentPosition(rd)
-
-    # #check for possible cell with both confoundus and wumpus then mark cell as U
-    # def checkConfoundusWumpus(self, confoundus, wumpus):
-    #     containBoth = confoundus.intersection(wumpus)
-    #     for i in containBoth:
-    #         self.map.map[i[1]][i[0]][4] = 'U'
-
-    # def queryPossibleWumpus(self, rx, ry):
-    #     #query agent for wumpus location and use offset to represent in map
-    #     #return a list of all confoundus location
-    #     listOfWumpus = set() 
-    #     offsetX = self.x - rx
-    #     offsetY = self.y - ry
-    #     print("Possible wumpus: ", end=" ")
-    #     #valid game range for x is range 1 to 4; valid y is range 1 to 5
-    #     for i in list(prolog.query("wumpus(X,Y)")):
-    #         possibleX = i['X'] + offsetX
-    #         possibleY = i['Y'] + offsetY
-    #         listOfWumpus.add((possibleX, possibleY))
-    #         print(f"({possibleX}, {possibleY})", end = " ")
-    #         #if(possibleX > 0 and possibleX < 5 and possibleY > 0 and possibleY < 6):
-    #         self.map.map[possibleY][possibleX][4] = 'W'
-    #     print()
-    #     return listOfWumpus
-
-    # def queryPossibleConfoundus(self, rx, ry):
-    #     #query agent for confoundus location and use offset to represent in map
-    #     #return a set of all confoundus location
-    #     listOfConfoundus = set()
-    #     offsetX = self.x - rx
-    #     offsetY = self.y - ry
-    #     print("Possible confoundus: ", end=" ")
-    #     #valid game range for x is range 1 to 4; valid y is range 1 to 5
-    #     for i in list(prolog.query("confoundus(X,Y)")):
-    #         possibleX = i['X'] + offsetX
-    #         possibleY = i['Y'] + offsetY
-    #         listOfConfoundus.add((possibleX, possibleY))
-    #         print(f"({possibleX}, {possibleY})", end = " ")
-    #         #if(possibleX > 0 and possibleX < 5 and possibleY > 0 and possibleY < 6):
-    #         self.map.map[possibleY][possibleX][4] = 'O'
-    #     print()
-    #     return listOfConfoundus
-    
-    # def querySafeUnvisited(self, rx, ry):
-    #     #query agent for safe unvisited location and use offset to represent in map
-    #     offsetX = self.x - rx
-    #     offsetY = self.y - ry
-    #     print("Possible unvisited safe: ", end=" ")
-    #     #valid game range for x is range 1 to 4; valid y is range 1 to 5
-    #     for i in list(prolog.query("safe(X,Y)")):
-    #         possibleX = i['X'] + offsetX
-    #         possibleY = i['Y'] + offsetY
-    #         print(f"({possibleX}, {possibleY})", end = " ")
-    #         # if(possibleX > 0 and possibleX < 5 and possibleY > 0 and possibleY < 6):
-    #         self.map.map[possibleY][possibleX][3] = '.'
-    #         self.map.map[possibleY][possibleX][5] = '.'
-    #         self.map.map[possibleY][possibleX][4] = 's'
-    #     print()
-
-    # def queryVisited(self, rx, ry, rd):
-    #     #query agent for visited location and use offset to represent in map
-    #     offsetX = self.x - rx
-    #     offsetY = self.y - ry
-    #     print("Visited: ", end=" ")
-    #     #valid game range for x is range 1 to 4; valid y is range 1 to 5
-    #     for i in list(prolog.query("visited(X,Y)")):
-    #         possibleX = i['X'] + offsetX
-    #         possibleY = i['Y'] + offsetY
-    #         print(f"({possibleX}, {possibleY})", end = " ")
-    #         # if(possibleX > 0 and possibleX < 5 and possibleY > 0 and possibleY < 6):
-    #         self.map.map[possibleY][possibleX][3] = '.'
-    #         self.map.map[possibleY][possibleX][5] = '.'
-    #         self.map.map[possibleY][possibleX][4] = 'S'
-    #     print()
-    
-    # def queryWall(self, rx, ry):
-    #     #query agent for wall location and use offset to represent in map
-    #     offsetX = self.x - rx
-    #     offsetY = self.y - ry
-    #     print("Possible wall: ", end=" ")
-    #     #valid game range for x is range 1 to 4; valid y is range 1 to 5
-    #     for i in list(prolog.query("wall(X,Y)")):
-    #         possibleX = i['X'] + offsetX
-    #         possibleY = i['Y'] + offsetY
-    #         print(f"({possibleX}, {possibleY})", end = " ")
-    #         self.map.fillWall(possibleX, possibleY)
-    #     print()
-
-        
-    # def updateAgentPosition(self, rd):
-    #     #update cell 3 and 5 of the new cell agent is to '-'
-    #     self.map.map[self.y][self.x][3] = '—'
-    #     self.map.map[self.y][self.x][5] = '—'
-    #     #update cell 4 to the relative orientation of the agent
-    #     if(rd=='rnorth'):
-    #         self.map.map[self.y][self.x][4] = '^'
-    #     elif(rd=='rsouth'):
-    #         self.map.map[self.y][self.x][4] = 'v'
-    #     elif(rd=='reast'):
-    #         self.map.map[self.y][self.x][4] = '>'
-    #     elif(rd=='rwest'):
-    #         self.map.map[self.y][self.x][4] = '<'
-
-    # def qeurySensory(self, rx, ry):
-    #     #update confoundus, stench, tingle, glitter 
-    #     #query the sensory information
-    #     if bool(list(prolog.query(f"confoundus({rx},{ry})"))):
-    #         self.map.map[self.y][self.x][0] = '%'
-
-    #     else:
-    #         self.map.map[self.y][self.x][0] = '.'
-    #     if bool(list(prolog.query(f"stench({rx},{ry})"))):
-    #         self.map.map[self.y][self.x][1] = '='
-    #     else:
-    #         self.map.map[self.y][self.x][1] = '.'
-    #     if bool(list(prolog.query(f"tingle({rx},{ry})"))):
-    #         self.map.map[self.y][self.x][2] = 'T'
-
-    #     else:
-    #         self.map.map[self.y][self.x][2] = '.'
-    #     if bool(list(prolog.query(f"glitter({rx},{ry})"))):
-    #         self.map.map[self.y][self.x][6] = '*'
-    #     else:
-    #         self.map.map[self.y][self.x][6] = '.'
-
-    #     #update bump
-    #     #query if the first and second current is the same it means it did not move so a bump
-    #     try:
-    #         newPosition = list(prolog.query("current(X,Y,D)"))[0]
-    #         previousPosition = list(prolog.query("current(X,Y,D)"))[1]
-    #         if(newPosition == previousPosition): 
-    #             self.map.map[self.y][self.x][7] = 'B'
-    #         else:
-    #             self.map.map[self.y][self.x][7] = '.'
-    #     except IndexError:
-    #         #no previous position; at the start of the game 
-    #         pass
-
-    #     #update scream
-    #     wumpus_count = len(list(prolog.query("wumpus(X,Y)")))
-    #     hasarrow = bool(list(prolog.query("hasarrow")))
-    #     if(hasarrow == False and wumpus_count==0 and self.initial_scream_heard == 1):
-    #         self.map.map[self.y][self.x][8] = '@'
-    #         self.initial_scream_heard = 0
-    #     else:
-    #         self.map.map[self.y][self.x][8] = '.'
-
-
-

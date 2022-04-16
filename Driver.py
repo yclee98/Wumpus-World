@@ -29,9 +29,11 @@ def main():
     print("turn right: r")
     print("Shoot: s")
     print("Pickup: p")
-    print("Explore: e")
+    print("Interative explore: e")
+    print("Auto explore: a")
+    print()
     while(move != "1"):
-        move = input("Available Inputs : f l r s p e 1): ")
+        move = input("Available Inputs : 1 f l r s p e a: ")
         if(move == "f"):
             agent.move("moveforward")
         elif (move =="l"):
@@ -46,6 +48,10 @@ def main():
             agent.endGame=False
             while(agent.endGame==False):
                 agent.explore()
+        elif(move=="a"):
+            agent.endGame=False
+            while(agent.endGame==False):
+                agent.autoExplore()
 
 
 if __name__== "__main__":
