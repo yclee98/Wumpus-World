@@ -55,6 +55,7 @@ class Map:
         self.agent = agent
 
     def restartGame(self):
+        self.clearMap()
         self.agent.spawnAgent()
         self.npc.spawnNpc()
         self.spawnNPConMap()
@@ -206,7 +207,7 @@ class Agent:
         self.endGame = False
 
     def spawnAgent(self):
-        #self.endGame = False
+        self.endGame = False
         self.x=1
         self.y=1
         self.orientation="north"
@@ -334,20 +335,14 @@ class Agent:
         self.checkEndGame()
 
     def explore(self):
-        actions = list(prolog.query("explore(L)"))[0]['L']
-        input("Enter to continue")
-        for i in actions:
-            a = str(i)
-            self.move(a)
-    
-    def autoExplore(self):
-        actions = list(prolog.query("explore(L)"))[0]['L']
-        for i in actions:
-            a = str(i)
-            self.move(a)
+        while(self.endGame == False):
+            actions = list(prolog.query("explore(L)"))[0]['L']
+            for i in actions:
+                a = str(i)
+                self.move(a)
        
 
-    def enterconfundusPortal(self):
+    def enterConfundusPortal(self):
         print("===================================")
         print("===========ENTERED PORTAL==========")
         print("===================================")
@@ -391,9 +386,7 @@ class Agent:
             print("=================================")
             print("============GAME OVER============")
             print("=================================")
-            # quit()
-            self.map.clearMap()
-            self.map.restartGame()
+            # self.map.restartGame()
             self.endGame = True
             return True
 
@@ -589,6 +582,20 @@ class RelativeMap(Map):
 
 import sys
 
+
+class Test:
+    def __init__(self, agent, map):
+        self.agent = agent
+        self.map = map
+
+    def run_test(self):
+        self.correctness_of_explore()
+
+    def correctness_of_explore(self):
+        self.map.restartGame()
+        self.agent.explore()
+
+
 def main():
     rows = 7
     columns = 6
@@ -604,17 +611,14 @@ def main():
     rMap= RelativeMap(Rrows, Rcolumns, innerCell)
     npc = NPC()
     agent = Agent(map, rMap)
+    test = Test(agent, map)
 
     #create map and spawn npc
     map.createMap()
     #store NPC inside map cass
     map.initalizeObject(npc, agent)
-    map.restartGame()
-    
-    
-    agent.endGame=False
-    while(agent.endGame==False):
-        agent.autoExplore()
+
+    test.run_test()
 
 if __name__== "__main__":
     main()
