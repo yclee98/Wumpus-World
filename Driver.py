@@ -1,6 +1,7 @@
 from contextlib import nullcontext
 import random
 import math
+import sys
 from pyswip import Prolog
 
 prolog = Prolog()
@@ -340,7 +341,7 @@ class Agent:
             for i in actions:
                 a = str(i)
                 self.move(a)
-       
+
 
     def enterConfundusPortal(self):
         print("===================================")
@@ -393,7 +394,7 @@ class Agent:
     #when there is no coin and agent return to origin 
     def returnOrign(self):
         if(self.map.npc.coin == None and (self.x, self.y) == self.origin):
-            print("Coin collected, returned to origin, ganeover")
+            print("Coin collected, returned to origin, game over")
             return True
         return False
 
@@ -402,7 +403,7 @@ class Agent:
         if(self.map.npc.wumpus == None): return False
 
         if((self.x, self.y) == self.map.npc.wumpus):
-            print("Entered wumpus cell, gameover")
+            print("Entered wumpus cell, game over")
             return True
         else:
             return False
@@ -580,7 +581,6 @@ class RelativeMap(Map):
     def heardScream(self):
         self.initial_scream_heard=1
 
-import sys
 
 
 class Test:
@@ -589,11 +589,117 @@ class Test:
         self.map = map
 
     def run_test(self):
-        self.correctness_of_explore()
+        self.task_1_localisaion_and_mapping()
+        self.task_2_sensory_inference()
+        self.task_3_correctness_of_portal()
+        self.task_4_agent_explore()
+        self.task_5_end_game_reset()
 
-    def correctness_of_explore(self):
+    def task_1_localisaion_and_mapping(self):
+        print("==== Task 1: Correctness of Agent's localisation and mapping abilities =====")
+        print("Driver will call the agent to perform sequence of actions")
+        print("The relative map will grow bigger as agent move forward as it is centered around the origin")
+        print("Origin room is marked with %")
+        self.map.restartGame()
+        self.agent.move("moveforward")
+        self.agent.move("turnright")
+        self.agent.move("moveforward")
+        self.agent.move("turnleft")
+        self.agent.move("moveforward")
+
+    def task_2_sensory_inference(self):
+        print("============ Task 2: Correctness of Agent’s sensory inference =============")
+        print("This is the test of the agent's sensory perception and inference\n")
+        print("Senses: {Confounded, Stench, Tingle, Glitter, Bump, Scream}\n")
+        self.map.restartGame()
+        print("Bump: when the agent encounters a bump, it will infer that the room ahead is a wall")
+        actions = ['turnright', 'turnright', 'moveforward', 'turnright', 'turnright']
+        for i in actions:
+            a = str(i)
+            self.agent.move(a)
+
+        print("Stench: When the agent first encounters a stench, it will label all adjacent rooms as wumpus inhabited.")
+        print("        suspected-wumpus rooms (relative coords): (0,2), (1,1)")
+        print("        As the agent's KB will be more accurate as the it explores further.\n")
+        actions = ['moveforward']
+        self.agent.move(actions[0])
+
+        print("Tingle: When the agent encounters a Tingle, it will label all adjacent rooms as confoundus portal inhabited.")
+        print("        suspected-portal rooms (relative coords): (2,2), (3,1), (2,0)")
+        print("        As the agent encounters more tingles, it will have more suspicions of where the portal rooms are.\n")
+        actions = ['turnright', 'moveforward', 'moveforward']
+        for i in actions:
+            a = str(i)
+            self.agent.move(a)
+
+        print("Glitter: When the agent is in the same room as the coin, he should percieve a glitter, indicated in the")
+        print("         map by a '*'")
+        actions = ['turnleft', 'turnleft', 'moveforward', 'turnright', 'moveforward']
+        for i in actions:
+            a = str(i)
+            self.agent.move(a)
+
+        print('Scream: When the agent kills a wumpus, it should percieve a scream. The agent will also update its KB')
+        print('        that all wumpus label room should be safe (s) or unknown (?)')
+        actions = ['turnleft', 'shoot']
+        for i in actions:
+            a = str(i)
+            self.agent.move(a)
+
+    def task_3_correctness_of_portal(self):
+        print("=========== Task 3: Correctness of entering Confundus Portal =============")
+        print("As the agent steps into the confoundus portal, its prior knowledge of the world it had collected previously will be removed")
+        print("this is shown by resetting the relative map back to 3x3 map with the portaled location set as the the new origin (0,0)")
+        self.map.restartGame()
+        self.agent.move("moveforward")
+        self.agent.move("turnright")
+        self.agent.move("moveforward")
+        self.agent.move("moveforward")
+        self.agent.move("turnleft")
+        self.agent.move("moveforward")
+        print("The agent is now spawned to a random safe location, and its relative map  has been reset to a 3x3 map and its knowledge base as been cleared.")
+        print("it is now perceiving the sensory data at its new spawned location\n")
+
+    def task_4_agent_explore(self):
+        print("========= Task 4: Correctness of Agent's Exploration capabilities =========")
+        print("This is the test for agent exploration capabilities ")
+        print("explore(L) will be called repeatedly to query the agent in prolog for actions that leads to")
+        print("safe and non-visited location, and will be feed back to agent through move(A,L).")
+        print("When a coin is found agent will pick it up")
+        print("When agent entered a room that is adjacent to possible wumpus and agent have confirm the location of")
+        print("wumpus(there is only 1 possible wumpus in agent knowledge) he will try to shoot the wumpus")
+        print("Once coin is pickup, agent will return to origin")
         self.map.restartGame()
         self.agent.explore()
+        print("")
+
+    def task_5_end_game_reset(self):
+        print("======== Task 5: Correctness of Agent's end game reset ========")
+        print("This is the test for agent end game when agent entered a wumpus room or")
+        print("when the coin is collected and agent return back to origin")
+
+        print("======== When agent entered a wumpus location ========")
+        self.map.restartGame()
+        self.agent.move("moveforward")
+        self.agent.move("moveforward")
+
+        print()
+        print("======== When agent collect the coin and return to origin ========")
+        self.map.restartGame()
+        self.agent.move("moveforward")
+        self.agent.move("turnright")
+        self.agent.move("moveforward")
+        self.agent.move("turnleft")
+        self.agent.move("moveforward")
+        self.agent.move("pickup")
+        self.agent.move("turnright")
+        self.agent.move("turnright")
+        self.agent.move("moveforward")
+        self.agent.move("turnright")
+        self.agent.move("moveforward")
+        self.agent.move("turnleft")
+        self.agent.move("moveforward")
+
 
 
 def main():
